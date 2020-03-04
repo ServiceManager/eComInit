@@ -1,0 +1,6 @@
+[submodule "external/libucl"]
+	path = external/libucl
+	url = https://github.com/vstakhov/libucl.git
+[submodule "external/uthash"]
+	path = external/uthash
+	url = https://github.com/troydhanson/uthash.git

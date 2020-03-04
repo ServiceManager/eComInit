@@ -1,0 +1,25 @@
+name: "getty",
+default-instance: "console",
+
+properties: [ 
+    { 
+        name: "device",
+        value: "${instance-name}" 
+    }
+],
+
+methods: [
+    { 
+        name: "start",
+        exec: "getty ${device}"
+    }
+],
+
+instances: [
+    {
+        name: "console"
+    },
+    {
+        name: "tty1"
+    }
+]

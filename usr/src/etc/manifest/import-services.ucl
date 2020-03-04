@@ -1,0 +1,7 @@
+name: "system/svc/import-services",
+methods: [ 
+    { 
+        name: "start",
+        exec: "/lib/s16/method/import-services"
+    }
+],

@@ -1,0 +1,16 @@
+name: "b",
+default-instance: "i",
+
+
+instances: [
+    {
+        name: "i",
+    dependencies: [
+        {
+            grouping: require-all,
+            restart-on: refresh,
+            paths: [ "a:i" ]
+        }
+    ]
+    }
+]

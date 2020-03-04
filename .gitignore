@@ -1,0 +1,49 @@
+# Building
+out/*
+bld/*
+build/*
+
+# Jeera isn't ready for the public yet
+jeera/*
+
+.clangd/*
+.vs/*
+.vscode/*
+
+compile_commands.json
+*.nfs.*
+__pycache__
+_build
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+*.core
+
+# Trinity-Kate
+*~

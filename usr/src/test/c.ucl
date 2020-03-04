@@ -1,0 +1,14 @@
+name: "c",
+
+instances: [
+    {
+        name: "i",
+    dependencies: [
+        {
+            restart-on: restart,
+            grouping: optional-all,
+            paths: [ "b" ]
+        }
+    ]
+    }
+]
