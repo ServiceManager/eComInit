@@ -15,7 +15,9 @@ more functional than its alternatives, while retaining a modular design in the
 UNIX tradition.
 
 We have an IRC channel; find it at
-[irc.freenode.net #systemxvi](irc://irc.freenode.net/systemxvi).
+[irc.freenode.net #systemxvi](irc://irc.freenode.net/systemxvi). You might also
+want to read the System XVI Manual. This is nowhere near complete, but you may
+find the work in progress [here](https://system-xvi.readthedocs.io/en/latest/).
 
 S16 aspires to be both soundly designed and practical: it should be capable of
 handling as many use cases as possible, yet achieve this on the basis of its

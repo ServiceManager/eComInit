@@ -18,6 +18,7 @@ BSD.
    :numbered:
 
    sec-i/what
+   sec-i/prior
 
 .. toctree::
    :caption: II: Service Information
