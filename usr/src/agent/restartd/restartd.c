@@ -86,7 +86,6 @@ Unit * manager_find_unit_for_pid (pid_t pid)
 
 int main (int argc, char * argv[])
 {
-    bool repo_up;
     struct kevent sigev;
     struct timespec tmout = {0, 0}; /* return at once initially */
 
@@ -115,7 +114,7 @@ int main (int argc, char * argv[])
         exit (EXIT_FAILURE);
     }
 
-    if (!repo_up)
+    if (!manager.repo_up)
     {
         Unit * configd = unit_add (s16_path_configd ());
         s16note_t * note =
@@ -123,7 +122,7 @@ int main (int argc, char * argv[])
 
         configd->type = U_SIMPLE;
         configd->methods[UM_PRESTART] = "/usr/bin/echo PRESTART";
-        configd->methods[UM_START] = "/usr/bin/sleep 10";
+        configd->methods[UM_START] = S16_CONFIGD_BINARY;
         configd->methods[UM_POSTSTART] = "/usr/bin/echo POSTSTART";
         configd->methods[UM_STOP] = "/usr/bin/echo STOP";
         configd->state = US_OFFLINE;

@@ -36,7 +36,10 @@ extern "C"
 #include <stdint.h>
 #include <time.h>
 
+#include "s16compat.h"
 #include "s16list.h"
+
+#define S16_CONFIGD_BINARY S16_LIBEXECDIR "/s16.configd"
 
 #ifndef S16_MEM_
 #define S16_MEM_

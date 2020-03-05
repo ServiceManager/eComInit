@@ -56,7 +56,7 @@ include_directories("${PROJECT_SOURCE_DIR}/hdr")
 include_directories("${CMAKE_SOURCE_DIR}")
 include_directories(${Readline_INCLUDE_DIR})
 
-SET(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib/s16)
+SET(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 
 add_subdirectory(etc)
 
