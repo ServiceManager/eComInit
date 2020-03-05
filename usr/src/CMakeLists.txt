@@ -2,6 +2,7 @@ include (CheckIncludeFiles)
 include (CheckLibraryExists)
 include (FindPkgConfig)
 include (cmake/LemFlex.cmake)
+include(GNUInstallDirs)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 

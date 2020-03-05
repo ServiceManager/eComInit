@@ -33,8 +33,8 @@ services.
 
 Because it follows the Four Motives, all this is achieved in separate daemons;
 each implements one section of the grand concert of System XVI. The flexibility
-allows, for example, legacy unit-files from the deprecated service manager
-SystemD to be converted and ran by System XVI.
+allows, for example, legacy unit-files from SystemD to be converted and ran by
+System XVI.
 
 Fault-Tolerant
 ~~~~~~~~~~~~~~

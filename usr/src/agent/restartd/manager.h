@@ -35,13 +35,23 @@
 
 typedef struct manager_s
 {
+    /* Handles */
+    /* Kernel Queue */
     int kq;
+    /* Repository handle */
     s16db_hdl_t h;
+    /* Process-Tracker handle */
     process_tracker_t * pt;
     // rreq_list_t rreq_queue;
+    /* Timerset */
     timerset_t ts;
 
     Unit_list_t units;
+
+    /* Repository connection retrying */
+    bool repo_up;
+    int repo_retry_delay;
+    long repo_retry_timer;
 } Manager;
 
 /* To be called when the service repository comes up. */

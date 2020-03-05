@@ -11,4 +11,4 @@ endif()
 
 add_library (s16rr SHARED process.c process-tracker/pt-driver-${PT_DRIVER}.c)
 
-install(TARGETS s16rr DESTINATION lib/s16)
+install(TARGETS s16rr DESTINATION ${CMAKE_INSTALL_LIBDIR})

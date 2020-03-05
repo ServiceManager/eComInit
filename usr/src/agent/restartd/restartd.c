@@ -39,14 +39,38 @@ const int NOTE_RREQ = 18;
 
 Manager manager;
 
-void manager_configd_came_up ()
+void repo_retry_cb (long timer, void * unused)
 {
-    /* FIXME: Use an EVFILT_VNODE on the repo dir or something instead of
-     * sleeping. */
-    usleep (10000);
     if ((s16db_hdl_new (&manager.h)))
     {
         perror ("Failed to connect to repository");
+        if ((manager.repo_retry_delay = manager.repo_retry_delay * 2) > 3000)
+            s16_log (ERR, "Repeatedly failed to connect to repository.\n");
+        else
+        {
+            manager.repo_retry_timer = timerset_add (
+                &manager.ts, manager.repo_retry_delay, NULL, repo_retry_cb);
+        }
+    }
+    else
+    {
+        s16_log (DBG, "Connected to the repository.\n");
+        manager.repo_up = true;
+    }
+}
+
+void manager_configd_came_up ()
+{
+    if ((s16db_hdl_new (&manager.h)))
+    {
+        perror ("Failed to connect to repository");
+        manager.repo_retry_delay = 5;
+        manager.repo_retry_timer =
+            timerset_add (&manager.ts, 5, NULL, repo_retry_cb);
+    }
+    else
+    {
+        manager.repo_up = true;
     }
 }
 
@@ -78,7 +102,7 @@ int main (int argc, char * argv[])
     if ((s16db_hdl_new (&manager.h)))
     {
         perror ("Failed to connect to repository");
-        repo_up = false;
+        manager.repo_up = false;
     }
 
     signal (SIGCHLD, SIG_IGN);

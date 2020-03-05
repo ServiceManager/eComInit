@@ -16,6 +16,6 @@ set_target_properties(s16 PROPERTIES
     PUBLIC_HEADER "${PROJECT_BINARY_DIR}/s16compat.h;${CMAKE_SOURCE_DIR}/hdr/s16.h"
     )
 
-install(TARGETS s16 DESTINATION lib/s16
+install(TARGETS s16 DESTINATION ${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION include
         )

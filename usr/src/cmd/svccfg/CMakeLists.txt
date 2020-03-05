@@ -13,4 +13,4 @@ target_include_directories(svccfg PRIVATE ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE
 
 target_link_libraries (svccfg s16 s16db s16rpc uthash ucl ${LIBKQUEUE_LIBRARY} ${Readline_LIBRARY})
 
-install(TARGETS svccfg RUNTIME DESTINATION sbin)
+install(TARGETS svccfg RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR})

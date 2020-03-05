@@ -12,4 +12,4 @@ target_include_directories(svcadm PRIVATE ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE
 
 target_link_libraries (svcadm s16 s16db s16rpc ucl ${LIBKQUEUE_LIBRARY} ${Readline_LIBRARY})
 
-install(TARGETS svcadm RUNTIME DESTINATION sbin)
+install(TARGETS svcadm RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR})
