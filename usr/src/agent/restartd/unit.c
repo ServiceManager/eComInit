@@ -33,6 +33,7 @@
  */
 
 #include <assert.h>
+#include <sys/signal.h>
 
 #include "manager.h"
 #include "unit.h"
@@ -60,7 +61,11 @@ EStateProto (stopkill);
 void unit_enter_state (Unit * unit, UnitState state);
 void unit_timer_event (long id, void * data);
 
-void fork_cleanup_cb (void * data) { manager_fork_cleanup (); }
+void fork_cleanup_cb (void * data)
+{
+    setenv ("NOTIFY_SOCKET", NOTIFY_SOCKET_PATH, 1);
+    manager_fork_cleanup ();
+}
 
 UnitMethodType state_to_method_type (UnitState state)
 {

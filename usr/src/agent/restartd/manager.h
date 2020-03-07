@@ -33,6 +33,8 @@
 #include "timer.h"
 #include "unit.h"
 
+#define NOTIFY_SOCKET_PATH "/var/run/s16_sd_notify.sock"
+
 typedef struct manager_s
 {
     /* Handles */
@@ -45,6 +47,8 @@ typedef struct manager_s
     // rreq_list_t rreq_queue;
     /* Timerset */
     timerset_t ts;
+    /* sd-notify compatibility socket */
+    int sd_notify_s;
 
     Unit_list_t units;
 

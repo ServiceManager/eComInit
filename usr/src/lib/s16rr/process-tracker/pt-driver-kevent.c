@@ -33,8 +33,6 @@
 #include "s16list.h"
 #include "s16rr.h"
 
-S16List (pid, pid_t);
-
 void * s16mem_alloc (unsigned long);
 void s16mem_free (void *);
 
