@@ -77,7 +77,9 @@ int subreap_status ()
 #endif
 }
 
-process_wait_t * process_fork_wait (const char * cmd_)
+process_wait_t * process_fork_wait (const char * cmd_,
+                                    void (*cleanup_cb) (void *),
+                                    void * cleanup_cb_arg)
 {
     process_wait_t * pwait = s16mem_alloc (sizeof (process_wait_t));
     int n_spaces = 0;
@@ -104,6 +106,7 @@ process_wait_t * process_fork_wait (const char * cmd_)
         char dispose;
         close (pwait->fd[1]);
         read (pwait->fd[0], &dispose, 1);
+        close (pwait->fd[0]);
         execvp (argv[0], argv);
         perror ("Execvp failed!");
         exit (999);

@@ -23,9 +23,19 @@
  * Use is subject to license terms.
  */
 
-#include "unit.h"
-#include "manager.h"
+/*
+ * Desc: This file holds the logic for 'units', which are the master restarter's
+ * representation of service instances.
+ * Some things to consider:
+ *  - If we fail to get a PID from a fork operation, we go straight to
+ *   maintenance as failing to fork is an exceptional case. It may be better not
+ *   to do so.
+ */
+
 #include <assert.h>
+
+#include "manager.h"
+#include "unit.h"
 
 #define UnitTimerReg()                                                         \
     unit->timer_id = timerset_add (&manager.ts, 2000, unit, unit_timer_event);
@@ -49,6 +59,8 @@ EStateProto (stopkill);
 
 void unit_enter_state (Unit * unit, UnitState state);
 void unit_timer_event (long id, void * data);
+
+void fork_cleanup_cb (void * data) { manager_fork_cleanup (); }
 
 UnitMethodType state_to_method_type (UnitState state)
 {
@@ -78,7 +90,7 @@ void unit_deregister_pid (Unit * unit, pid_t pid)
 /* 0 for failure, valid PID for success */
 pid_t unit_fork_and_register (Unit * unit, const char * cmd)
 {
-    process_wait_t * pwait = process_fork_wait (cmd);
+    process_wait_t * pwait = process_fork_wait (cmd, fork_cleanup_cb, NULL);
     pid_t ret = 0;
 
     if (pwait == NULL || pwait->pid == 0)
@@ -191,9 +203,8 @@ void unit_enter_start (Unit * unit)
     }
     if (unit->type == U_SIMPLE || unit->type == U_ONESHOT ||
         unit->type == U_GROUP)
-        /* in a U_EXEC service, we consider it online as soon as the process
-         * specified in the start method is running.
-         * the same applies for a 'group' type unit. */
+        /* in these kinds of service, we consider it online as soon as the
+         * process specified in the start method is running */
         unit_enter_poststart (unit);
     else
     {
@@ -249,7 +260,7 @@ void unit_enter_stop (Unit * unit)
         }
     }
     else
-        unit_enter_state (unit, unit->target);
+        unit_enter_stopterm (unit);
 }
 
 void unit_enter_stopterm (Unit * unit)

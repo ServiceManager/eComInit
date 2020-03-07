@@ -24,6 +24,7 @@
  */
 
 #include <assert.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -41,6 +42,8 @@ int s16db_hdl_new (s16db_hdl_t * hdl)
         perror ("Failed to create socket");
         exit (-1);
     }
+
+    s16_cloexec (hdl->fd);
 
     memset (&sun, 0, sizeof (struct sockaddr_un));
     sun.sun_family = AF_UNIX;

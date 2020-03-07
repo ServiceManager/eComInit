@@ -24,6 +24,7 @@
  */
 
 #include <errno.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,6 +39,19 @@
 const int NOTE_RREQ = 18;
 
 Manager manager;
+
+void manager_fork_cleanup ()
+{
+    /* In principle, we don't need to do this. Everything of ours is CLOEXEC and
+     * we *should* be able to close the Kernel Queue and accordingly have all
+     * related FDs of that closed, as the KQueue manual pages say. But this
+     * doesn't work on my Linux system; libkqueue does not mark its various FDs
+     * as CLOEXEC, and what's worse, explicitly using EV_DELETE on our
+     * EVFILT_SIGNAL handlers stops us, the parent, from receiving EVFILT_SIGNAL
+     * events, but leaves the signalfds open! Something is rotten. */
+    for (int fd = 3; fd < 256; fd++)
+        close (fd);
+}
 
 void repo_retry_cb (long timer, void * unused)
 {
@@ -94,6 +108,7 @@ int main (int argc, char * argv[])
     manager.kq = kqueue ();
     if (manager.kq == -1)
         perror ("KQueue: Failed to open\n");
+    s16_cloexec (manager.kq);
 
     manager.pt = pt_new (manager.kq);
     timerset_init (&manager.ts, manager.kq);
@@ -114,6 +129,14 @@ int main (int argc, char * argv[])
         exit (EXIT_FAILURE);
     }
 
+    EV_SET (&sigev, SIGCHLD, EVFILT_SIGNAL, EV_ADD, 0, 0, 0);
+
+    if (kevent (manager.kq, &sigev, 1, 0, 0, 0) == -1)
+    {
+        perror ("KQueue: Failed to set signal event\n");
+        exit (EXIT_FAILURE);
+    }
+
     if (!manager.repo_up)
     {
         Unit * configd = unit_add (s16_path_configd ());
@@ -122,7 +145,7 @@ int main (int argc, char * argv[])
 
         configd->type = U_SIMPLE;
         configd->methods[UM_PRESTART] = "/usr/bin/echo PRESTART";
-        configd->methods[UM_START] = S16_CONFIGD_BINARY;
+        configd->methods[UM_START] = "/usr/bin/sleep 90";
         configd->methods[UM_POSTSTART] = "/usr/bin/echo POSTSTART";
         configd->methods[UM_STOP] = "/usr/bin/echo STOP";
         configd->state = US_OFFLINE;
@@ -167,7 +190,8 @@ int main (int argc, char * argv[])
         switch (ev.filter)
         {
         case EVFILT_SIGNAL:
-            fprintf (stderr, "Signal received: %lu. Additional data: %ld\n",
+            fprintf (stderr,
+                     "Restartd: Signal received: %lu. Additional data: %ld\n",
                      ev.ident, ev.data);
             if (ev.ident == SIGCHLD)
                 while (waitpid ((pid_t) (-1), 0, WNOHANG) > 0)

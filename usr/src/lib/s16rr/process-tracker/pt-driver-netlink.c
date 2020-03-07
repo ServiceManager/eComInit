@@ -30,6 +30,7 @@
  * Be aware: this requires root. */
 
 #include <errno.h>
+#include <fcntl.h>
 #include <linux/cn_proc.h>
 #include <linux/connector.h>
 #include <linux/netlink.h>

@@ -253,6 +253,7 @@ extern "C"
     bool s16_svc_name_equal (const svc_t * a, const svc_t * b);
 
     /* Logging functionality */
+    /* Log level: At which level of verbosity should this be emitted? */
     typedef enum
     {
         DBG,
@@ -272,6 +273,10 @@ extern "C"
                       const char * fmt, ...);
     void s16_log_inst (s16_log_level_t level, const svc_instance_t * inst,
                        const char * fmt, ...);
+
+    /* Misc functionality */
+    /* Set FD_CLOEXEC on some FD, preserving old flags. */
+    void s16_cloexec (int fd);
 
 #ifdef __cplusplus
 }

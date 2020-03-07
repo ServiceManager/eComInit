@@ -75,7 +75,9 @@ extern "C"
     /* Forks a process for the command specified.
      * This process waits until process_fork_continue()
      * is called. */
-    process_wait_t * process_fork_wait (const char * cmd_);
+    process_wait_t * process_fork_wait (const char * cmd_,
+                                        void (*cleanup_cb) (void *),
+                                        void * cleanup_cb_arg);
     /* Tells the child process to continue.
      * This also frees the process_wait_t structure. */
     void process_fork_continue (process_wait_t * pwait);

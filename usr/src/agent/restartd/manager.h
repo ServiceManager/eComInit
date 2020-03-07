@@ -54,6 +54,9 @@ typedef struct manager_s
     long repo_retry_timer;
 } Manager;
 
+/* Clean up everything after having forked. */
+void manager_fork_cleanup ();
+
 /* To be called when the service repository comes up. */
 void manager_configd_came_up ();
 Unit * manager_find_unit_for_pid (pid_t pid);

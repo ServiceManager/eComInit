@@ -24,6 +24,7 @@
  */
 
 #include <assert.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -363,4 +364,16 @@ void s16_log_inst (s16_log_level_t level, const svc_instance_t * inst,
     print_prefix (level, inst->path);
     vprintf (fmt, args);
     va_end (args);
+}
+
+void s16_cloexec (int fd)
+{
+    int flags;
+    flags = fcntl (fd, F_GETFD);
+    if (flags != -1)
+        fcntl (fd, F_SETFD, flags | FD_CLOEXEC);
+    else
+    {
+        perror ("Fcntl!");
+    }
 }
