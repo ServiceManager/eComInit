@@ -4,3 +4,6 @@
 [submodule "external/uthash"]
 	path = external/uthash
 	url = https://github.com/troydhanson/uthash.git
+[submodule "external/SystemD"]
+	path = external/SystemD
+	url = git@github.com:System-XVI/SystemD.git
