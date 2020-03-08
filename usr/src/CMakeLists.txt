@@ -78,6 +78,7 @@ add_subdirectory(agent/graphd)
 add_subdirectory(cmd/svcadm)
 add_subdirectory(cmd/svccfg)
 add_subdirectory(cmd/svcs)
+add_subdirectory(cmd/s16systemd-notify)
 
 if(NOT Java_Development_FOUND)
     message("JDK not found; will not build Java components")
