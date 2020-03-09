@@ -119,6 +119,7 @@ void setup_sd_notify ()
     int s;
     struct sockaddr_un sun;
     struct kevent ev;
+    int yes = 1;
 
     if ((s = socket (AF_UNIX, SOCK_DGRAM, 0)) == -1)
     {
@@ -134,6 +135,11 @@ void setup_sd_notify ()
     {
         perror ("Failed to bind socket for sd_notify");
         exit (-1);
+    }
+
+    if (setsockopt (s, SOL_SOCKET, LOCAL_PEERCRED, &yes, sizeof (int)) < 0)
+    {
+        perror ("setsockopt for sd_notify!");
     }
 
     s16_cloexec (s);
@@ -158,13 +164,6 @@ void handle_sd_notify_recv ()
         char cred[CMSG_SPACE (sizeof (CREDS))];
     } cmsg;
     CREDS * creds;
-    int yes = 1;
-
-    if (setsockopt (manager.sd_notify_s, SOL_SOCKET, LOCAL_PEERCRED, &yes,
-                    sizeof (int)) < 0)
-    {
-        perror ("setsockopt for sd_notify!");
-    }
 
     iov[0].iov_base = buf;
     iov[0].iov_len = sizeof (buf);

@@ -90,7 +90,7 @@ int main (int argc, char * argv[])
         }
     }
 
-    if (sd_notify (false, utstring_body (str)))
+    if (sd_notify (false, utstring_body (str)) < 0)
     {
         perror ("sd_notify!");
     }
