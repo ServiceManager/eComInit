@@ -33,6 +33,7 @@
  */
 
 #include <assert.h>
+#include <signal.h>
 #include <sys/signal.h>
 
 #include "manager.h"
@@ -73,8 +74,8 @@ UnitMethodType state_to_method_type (UnitState state)
     return state == US_PRESTART  ? UM_PRESTART
          : state == US_START     ? UM_START
          : state == US_POSTSTART ? UM_POSTSTART
-         : state == UM_STOP      ? UM_STOP
-         : state == UM_POSTSTOP  ? UM_POSTSTOP
+         : state == US_STOP      ? UM_STOP
+         : state == US_POSTSTOP  ? UM_POSTSTOP
          : -1;
     /* clang-format on */
 }

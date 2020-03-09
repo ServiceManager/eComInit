@@ -35,15 +35,33 @@
 #include <unistd.h>
 
 #if defined(SCM_CREDS)
+/* BSD style */
+#define S16_SO_CREDOPT_LVL 0
+
+#if defined(__FreeBSD__)
+/* FreeBSD case */
 #define CREDS struct cmsgcred
 #define CREDS_PID(c) c->cmcred_pid
+#define S16_SO_CREDOPT LOCAL_PEERCRED
+#else
+/* NetBSD case */
+#define CREDS struct sockcred
+#define CREDS_PID(c) c->sc_pid
+#define S16_SO_CREDOPT LOCAL_CREDS
+#endif
+
 #elif defined(SCM_CREDENTIALS)
+/* Linux style */
+#define S16_SO_CREDOPT_LVL SOL_SOCKET
 #define CREDS struct ucred
 #define CREDS_PID(c) c->pid
-#define LOCAL_PEERCRED SO_PASSCRED
+#define S16_SO_CREDOPT SO_PASSCRED
 #define SCM_CREDS SCM_CREDENTIALS
+
 #else
+
 #error "Unsupported platform - can't pass credentials over socket"
+
 #endif
 
 #include "manager.h"
@@ -131,15 +149,15 @@ void setup_sd_notify ()
     sun.sun_family = AF_UNIX;
     strncpy (sun.sun_path, NOTIFY_SOCKET_PATH, sizeof (sun.sun_path));
 
+        if (setsockopt (s, S16_SO_CREDOPT_LVL, S16_SO_CREDOPT, &yes, sizeof (int)) < 0)
+    {
+        perror ("setsockopt for sd_notify!");
+    }
+
     if (bind (s, (struct sockaddr *)&sun, SUN_LEN (&sun)) == -1)
     {
         perror ("Failed to bind socket for sd_notify");
         exit (-1);
-    }
-
-    if (setsockopt (s, SOL_SOCKET, LOCAL_PEERCRED, &yes, sizeof (int)) < 0)
-    {
-        perror ("setsockopt for sd_notify!");
     }
 
     s16_cloexec (s);

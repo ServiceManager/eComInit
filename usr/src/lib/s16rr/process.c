@@ -28,6 +28,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <sys/signal.h>
 
 #if defined(__FreeBSD__) || defined(__DragonFly__)
 #include <kvm.h>
