@@ -80,23 +80,29 @@ that is specified for that part.
 ### FAQ
 
 > On what platforms is System XVI supported?
+
+These systems are regularly tested to ensure they work:
  * GNU/Linux
- * MusLibC/BusyBox/Linux
- * All five BSDs (but not as system manager on macOS)
+ * FreeBSD
+ * NetBSD
 
-On these platforms all core features should be available. Acting as a system
-manager on macOS is nontrivial to implement and out of scope, but as an
-auxiliary service manager, it should work.
+The other three BSDs (DragonFly, Open, and macOS) are also supported but have
+not been tested yet. On these platforms all core features should be available.
+Acting as a system manager on macOS is nontrivial to implement and out of
+scope, but as an auxiliary service manager, it should work.
 
-Any platform which is reasonably UNIX-like and has a KQueue available should
-work to a lesser degree. On those platforms, supporting supervision strategies
-other than *simple* is not possible. A process tracker driver could be written
-for platforms which have some way of keeping track of forking of subprocesses.
+Any other platform which is reasonably UNIX-like and has a Kernel Queues
+available (either natively supported or via a library such as *libkqueue*)
+should work to a lesser degree. On those platforms, no tracking of processes
+across forks is available by default. You may write a *process-tracker* driver
+if the platform provides a means of tracking the forking and exits of
+processes.
 
 > Under what licence is System XVI made available?
 
 System XVI is released under the Common Development and Distribution License
-(CDDL) version 1.1 only. You may instead use it under the terms of the GPLv3
-if you wish, with the exception of [graph.c](app/graphd/graph.c) (see within
-for reasoning.)
+(CDDL) version 1.1 only. Code under `external/` and `usr/src/vendor/` may be
+licensed otherwise, as these are sources from other projects.
+You may instead use System XVI under the terms of the GPLv3 if you wish, with
+the exception of [graph.c](app/graphd/graph.c) (see within for reasoning.)
 
