@@ -26,9 +26,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/signal.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <sys/signal.h>
 
 #if defined(__FreeBSD__) || defined(__DragonFly__)
 #include <kvm.h>
@@ -84,16 +84,16 @@ process_wait_t * process_fork_wait (const char * cmd_,
 {
     process_wait_t * pwait = s16mem_alloc (sizeof (process_wait_t));
     int n_spaces = 0;
-    char *cmd = strdup (cmd_), *tofree = cmd, **argv = NULL;
+    char *cmd = strdup (cmd_), *tofree = cmd, **argv = NULL, *saveptr = NULL;
     pid_t newPid;
 
-    strtok (cmd, " ");
+    strtok_r (cmd, " ", &saveptr);
 
     while (cmd)
     {
         argv = (char **)realloc (argv, sizeof (char *) * ++n_spaces);
         argv[n_spaces - 1] = cmd;
-        cmd = strtok (NULL, " ");
+        cmd = strtok_r (NULL, " ", &saveptr);
     }
 
     argv = (char **)realloc (argv, sizeof (char *) * (n_spaces + 1));
@@ -108,6 +108,7 @@ process_wait_t * process_fork_wait (const char * cmd_,
         close (pwait->fd[1]);
         read (pwait->fd[0], &dispose, 1);
         close (pwait->fd[0]);
+        cleanup_cb (cleanup_cb_arg);
         execvp (argv[0], argv);
         perror ("Execvp failed!");
         exit (999);

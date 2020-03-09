@@ -41,6 +41,9 @@
 
 #define UnitTimerReg()                                                         \
     unit->timer_id = timerset_add (&manager.ts, 2000, unit, unit_timer_event);
+#define UnitTimerDereg()                                                       \
+    timerset_del (&manager.ts, unit->timer_id);                                \
+    unit->timer_id = 0
 
 #define DbgEnteringState(x)                                                    \
     s16_log_path (INFO, unit->path, "Unit targetting state %s\n", #x);
@@ -139,7 +142,7 @@ static void unit_restart_begin_cb (long id, void * data)
 /* As unit_purge_and_target, but delayed. */
 void unit_retry_start (Unit * unit, int msecs)
 {
-    printf ("UNit retry start\n");
+    printf ("Unit retry start\n");
     unit->target = US_NONE;
     unit_purge_and_target (unit);
     unit->meth_restart_timer_id =
@@ -214,8 +217,8 @@ void unit_enter_start (Unit * unit)
         unit_enter_poststart (unit);
     else
     {
-        /* begin the timer for the process to fork within */
-        // UnitTimerReg ();
+        /* begin the timer for the process to fork/notify within */
+        UnitTimerReg ();
     }
 }
 
@@ -518,7 +521,6 @@ void unit_timer_event (long id, void * data)
 
     switch (unit->state)
     {
-
     case US_STOP:
     {
         s16_log_path (WARN, unit->path, "Stop method timed out.\n");
@@ -539,8 +541,9 @@ void unit_timer_event (long id, void * data)
         return;
     }
     case US_PRESTART:
+    case US_START:
     {
-        fprintf (stderr, "timeout in prestart\n");
+        fprintf (stderr, "timeout in prestart/start\n");
         unit->fail_cnt[UM_PRESTART]++;
 
         if (unit->fail_cnt[UM_PRESTART] > 5)
@@ -568,11 +571,22 @@ void unit_timer_event (long id, void * data)
         }*/
         return;
     }
-    case US_START:
+    }
+}
+
+void unit_notify_ready (Unit * unit)
+{
+    if (unit->state == US_START)
     {
-        fprintf (stderr, "timeout in start\n");
+        UnitTimerDereg ();
+        unit_enter_poststart (unit);
     }
-    }
+}
+
+void unit_notify_status (Unit * unit, char * status)
+{
+    s16_log_path (INFO, unit->path, "Unit received status update: \"%s\"\n",
+                  status);
 }
 
 bool unit_has_pid (Unit * unit, pid_t pid)

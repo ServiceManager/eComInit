@@ -35,6 +35,7 @@ typedef enum
     U_FORKS,
     U_ONESHOT,
     U_GROUP,
+    U_NOTIFY,
 } UnitType;
 
 typedef enum
@@ -124,10 +125,18 @@ S16List (Unit, Unit *);
 Unit * unit_add (path_t * path);
 /* Configures the unit with fresh data from the handle. */
 void unit_setup (Unit * unit);
+
 /* Sends a process-tracker event to the given unit. */
 void unit_ptevent (Unit * unit, pt_info_t * info);
 /* Sends a note to the given unit. */
 void unit_msg (Unit * unit, s16note_t * note);
+/* Notifies given unit that a readiness notification was received. */
+void unit_notify_ready (Unit * unit);
+/*
+ * Notifies given unit of a new status message from the daemon.
+ * Arg @status is owned by receiver. */
+void unit_notify_status (Unit * unit, char * status);
+
 /* Returns true if the given unit is in charge of the given PID. */
 bool unit_has_pid (Unit * unit, pid_t pid);
 

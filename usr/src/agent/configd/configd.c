@@ -33,6 +33,8 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#include "systemd/sd-daemon.h"
+
 #include "s16clnt.h"
 #include "s16db_priv.h"
 #include "s16srv.h"
@@ -103,6 +105,8 @@ int main (int argc, char * argv[])
 
     /* make sure repo socket deleted after exit */
     atexit (clean_exit);
+
+    sd_notify (0, "READY=1\nSTATUS=Service repository up and running");
 
     while (run)
     {

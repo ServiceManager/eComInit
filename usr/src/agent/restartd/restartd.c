@@ -149,7 +149,8 @@ void setup_sd_notify ()
     sun.sun_family = AF_UNIX;
     strncpy (sun.sun_path, NOTIFY_SOCKET_PATH, sizeof (sun.sun_path));
 
-        if (setsockopt (s, S16_SO_CREDOPT_LVL, S16_SO_CREDOPT, &yes, sizeof (int)) < 0)
+    if (setsockopt (s, S16_SO_CREDOPT_LVL, S16_SO_CREDOPT, &yes, sizeof (int)) <
+        0)
     {
         perror ("setsockopt for sd_notify!");
     }
@@ -170,6 +171,35 @@ void setup_sd_notify ()
     }
 
     manager.sd_notify_s = s;
+}
+
+void dispatch_sd_notify (pid_t pid, char * buf)
+{
+    char *seg, *saveptr = NULL, *status;
+    /* parsed outputs */
+    Unit * unit = manager_find_unit_for_pid (pid);
+
+    if (!unit)
+        s16_log (WARN,
+                 "Notification message sent for PID %d which does not belong "
+                 "to any known unit",
+                 pid);
+
+    seg = strtok_r (buf, "\n", &saveptr);
+    while (seg)
+    {
+        size_t len = strlen (seg);
+
+        if (len == 7 && !strncmp (seg, "READY=1", 7))
+            unit_notify_ready (unit);
+        else if (len > 7 && !strncmp (seg, "STATUS=", 7))
+            unit_notify_status (unit, strndup (seg + 7, len - 7));
+        else
+            s16_log (WARN, "Unhandled component of notify message: \"%s\"\n",
+                     seg);
+
+        seg = strtok_r (NULL, "\n", &saveptr);
+    }
 }
 
 void handle_sd_notify_recv ()
@@ -216,14 +246,24 @@ void handle_sd_notify_recv ()
         }
 
         creds = (CREDS *)CMSG_DATA (&cmsg.hdr);
-        s16_log (DBG, "Notification from pid %lu of <%s>\n", CREDS_PID (creds),
-                 buf);
+        s16_log (DBG,
+                 "Received SystemD-style notification from pid %lu: <%s>\n",
+                 CREDS_PID (creds), buf);
+        dispatch_sd_notify (CREDS_PID (creds), buf);
     }
 }
 
 void handle_signal (int sig)
 {
     struct kevent sigev;
+
+#ifdef S16_PLAT_BSD
+    /* On BSD, setting a signal event filter on a Kernel Queue does NOT
+     * supersede ordinary signal disposition; with libkqueue on Linux at least,
+     * however, it does. Therefore we ignore the signal; it'll be multiplexed
+     * into our event loop instead. */
+    signal (sig, SIG_IGN);
+#endif
 
     EV_SET (&sigev, sig, EVFILT_SIGNAL, EV_ADD, 0, 0, 0);
 
@@ -269,9 +309,9 @@ int main (int argc, char * argv[])
         s16note_t * note =
             s16note_new (N_RESTARTER_REQ, RR_START, configd->path, 0);
 
-        configd->type = U_SIMPLE;
+        configd->type = U_NOTIFY;
         configd->methods[UM_PRESTART] = "/usr/bin/env echo PRESTART";
-        configd->methods[UM_START] = "/usr/bin/env sleep 90";
+        configd->methods[UM_START] = "/opt/s16/libexec/s16.configd";
         configd->methods[UM_POSTSTART] = "/usr/bin/env echo POSTSTART";
         configd->methods[UM_STOP] = "/usr/bin/env echo STOP";
         configd->state = US_OFFLINE;
