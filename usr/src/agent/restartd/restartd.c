@@ -274,6 +274,21 @@ void handle_signal (int sig)
     }
 }
 
+/* Sets up a manifest-import service to read services into the repository. */
+void setup_manifest_import ()
+{
+    Unit * configd = unit_add (s16_path_configd ());
+    s16note_t * note =
+        s16note_new (N_RESTARTER_REQ, RR_START, configd->path, 0);
+
+    configd->type = U_ONESHOT;
+    configd->methods[UM_START] = "/opt/s16/etc/s16/method/manifest-import";
+    configd->state = US_OFFLINE;
+
+    unit_msg (configd, note);
+    s16note_destroy (note);
+}
+
 int main (int argc, char * argv[])
 {
     bool run = true;

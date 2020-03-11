@@ -1,0 +1,105 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "$ref": "#/definitions/Service",
+    "definitions": {
+        "Service": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "default-instance": {
+                    "type": "string"
+                },
+                "dependencies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Dependency"
+                    }
+                },
+                "methods": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Method"
+                    }
+                },
+                "instances": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Instance"
+                    }
+                }
+            },
+            "required": [
+                "name",
+            ],
+            "title": "Service"
+        },
+        "Dependency": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "grouping": {
+                    "type": "string",
+                    "enum": [ "require-all", "require-any", 
+                              "optional-all", "optional-any" ]
+                },
+                "restart-on": {
+                    "type": "string",
+                    "enum": [ "on-none", "on-error", "on-refresh", "on-restart" ]
+                },
+                "paths": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": [
+                "grouping",
+                "paths",
+                "restart-on"
+            ],
+            "title": "Dependency"
+        },
+        "Instance": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "dependencies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Dependency"
+                    }
+                },
+                "methods": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Method"
+                    }
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "title": "Instance"
+        },
+        "Method": {
+            "type": "object",
+            "additionalProperties": true
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+            },
+            "required": [
+                "name"
+            ],
+            "title": "Method"
+        },
+    }
+}

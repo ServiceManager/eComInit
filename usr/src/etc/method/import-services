@@ -23,3 +23,20 @@
 # Copyright 2020 David MacKay.  All rights reserved.
 # Use is subject to license terms.
 #
+
+dirs="/opt/s16/etc/s16/L1manifest"
+
+function import_dir
+{
+    typeset files=( $1/*.ucl )
+    /opt/s16/sbin/svccfg import ${files[@]}
+}
+
+for d in $dirs; do
+	if [ ! -d $d ]
+	then
+        echo "$0: $d is not a folder"
+    else
+        import_dir $d
+	fi
+done
