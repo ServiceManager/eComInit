@@ -87,6 +87,9 @@ void manager_fork_cleanup ()
         close (fd);
 }
 
+/* TODO: Evaluate if this is still useful now we have the notify functionality.
+ * Connections to the repository shouldn't fail if it has notified as being up,
+ * except with EINTR, which we should handle in libs16. */
 void repo_retry_cb (long timer, void * unused)
 {
     if ((s16db_hdl_new (&manager.h)))
@@ -253,6 +256,7 @@ void handle_sd_notify_recv ()
     }
 }
 
+/* TODO: Move to libs16 */
 void handle_signal (int sig)
 {
     struct kevent sigev;

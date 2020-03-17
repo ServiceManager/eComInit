@@ -64,6 +64,10 @@ int main (int argc, char * argv[])
     s16rpc_srv_t * srv;
     bool run = true;
 
+    /* make sure repo socket deleted after exit */
+    atexit (clean_exit);
+    s16_log_init ("Service Repository");
+
     if ((listener_s = socket (AF_UNIX, SOCK_STREAM, 0)) == -1)
     {
         perror ("Failed to create socket");
@@ -82,7 +86,6 @@ int main (int argc, char * argv[])
 
     listen (listener_s, 5);
 
-    s16_log_init ("Service Repository");
     db_setup ();
 
     subs = subscriber_list_new ();
@@ -102,9 +105,6 @@ int main (int argc, char * argv[])
 
     srv = s16rpc_srv_new (kq, listener_s, NULL, false);
     rpc_setup (srv);
-
-    /* make sure repo socket deleted after exit */
-    atexit (clean_exit);
 
     sd_notify (0, "READY=1\nSTATUS=Service repository up and running");
 

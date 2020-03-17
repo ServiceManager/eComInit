@@ -6,7 +6,7 @@ include(GNUInstallDirs)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
-cmake_minimum_required(VERSION 2.8.0)
+cmake_minimum_required(VERSION 2.8.11)
 project("System XVI")
 
 set(WARN_FLAGS "-Wall -Wno-unused-function -Wno-switch")
@@ -82,8 +82,8 @@ add_subdirectory(agent/graphd)
 
 add_subdirectory(cmd/svcadm)
 add_subdirectory(cmd/svccfg)
+add_subdirectory(cmd/svcnotify)
 add_subdirectory(cmd/svcs)
-add_subdirectory(cmd/s16systemd-notify)
 
 if(NOT Java_Development_FOUND)
     message("JDK not found; will not build Java components")
