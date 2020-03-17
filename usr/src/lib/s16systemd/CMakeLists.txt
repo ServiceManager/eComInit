@@ -5,6 +5,14 @@ set(SD_ROOT "${CMAKE_SOURCE_DIR}/../../external/SystemD/src")
 
 add_library (s16systemd SHARED ${SD_ROOT}/libsystemd-daemon/sd-daemon.c)
 
+if(S16_ENABLE_SD_NOTIFY)
+    target_compile_definitions(s16systemd PRIVATE S16_ENABLE_SD_NOTIFY)
+endif()
+
+if(LINUX)
+    target_link_libraries(s16systemd PUBLIC rt)
+endif()
+
 target_include_directories(s16systemd PUBLIC
     $<BUILD_INTERFACE:${SD_ROOT}>
     $<BUILD_INTERFACE:${SD_ROOT}/systemd>
