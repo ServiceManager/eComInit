@@ -72,7 +72,7 @@ const int NOTE_RREQ = 18;
 
 Manager manager;
 
-void clean_exit () { unlink (NOTIFY_SOCKET_PATH); }
+void clean_exit () { sd_notify_srv_cleanup (); }
 
 void manager_fork_cleanup ()
 {
@@ -135,127 +135,6 @@ Unit * manager_find_unit_for_pid (pid_t pid)
     return NULL;
 }
 
-void setup_sd_notify ()
-{
-    int s;
-    struct sockaddr_un sun;
-    struct kevent ev;
-    int yes = 1;
-
-    if ((s = socket (AF_UNIX, SOCK_DGRAM, 0)) == -1)
-    {
-        perror ("Failed to create socket for sd_notify");
-        exit (-1);
-    }
-
-    memset (&sun, 0, sizeof (struct sockaddr_un));
-    sun.sun_family = AF_UNIX;
-    strncpy (sun.sun_path, NOTIFY_SOCKET_PATH, sizeof (sun.sun_path));
-
-    if (setsockopt (s, S16_SO_CREDOPT_LVL, S16_SO_CREDOPT, &yes, sizeof (int)) <
-        0)
-    {
-        perror ("setsockopt for sd_notify!");
-    }
-
-    if (bind (s, (struct sockaddr *)&sun, SUN_LEN (&sun)) == -1)
-    {
-        perror ("Failed to bind socket for sd_notify");
-        exit (-1);
-    }
-
-    s16_cloexec (s);
-
-    EV_SET (&ev, s, EVFILT_READ, EV_ADD, 0, 0, NULL);
-    if (kevent (manager.kq, &ev, 1, 0, 0, 0) == -1)
-    {
-        perror ("KQueue: Failed to set read event for sd_notify\n");
-        exit (EXIT_FAILURE);
-    }
-
-    manager.sd_notify_s = s;
-}
-
-void dispatch_sd_notify (pid_t pid, char * buf)
-{
-    char *seg, *saveptr = NULL, *status;
-    /* parsed outputs */
-    Unit * unit = manager_find_unit_for_pid (pid);
-
-    if (!unit)
-        s16_log (WARN,
-                 "Notification message sent for PID %d which does not belong "
-                 "to any known unit",
-                 pid);
-
-    seg = strtok_r (buf, "\n", &saveptr);
-    while (seg)
-    {
-        size_t len = strlen (seg);
-
-        if (len == 7 && !strncmp (seg, "READY=1", 7))
-            unit_notify_ready (unit);
-        else if (len > 7 && !strncmp (seg, "STATUS=", 7))
-            unit_notify_status (unit, strndup (seg + 7, len - 7));
-        else
-            s16_log (WARN, "Unhandled component of notify message: \"%s\"\n",
-                     seg);
-
-        seg = strtok_r (NULL, "\n", &saveptr);
-    }
-}
-
-void handle_sd_notify_recv ()
-{
-    char buf[2048];
-    struct sockaddr_storage sst;
-    struct iovec iov[1];
-    union {
-        struct cmsghdr hdr;
-        char cred[CMSG_SPACE (sizeof (CREDS))];
-    } cmsg;
-    CREDS * creds;
-
-    iov[0].iov_base = buf;
-    iov[0].iov_len = sizeof (buf);
-
-    struct msghdr msg;
-    msg.msg_name = &sst;
-    msg.msg_namelen = sizeof (sst);
-    msg.msg_iov = iov;
-    msg.msg_iovlen = 1;
-    msg.msg_control = &cmsg;
-    msg.msg_controllen = sizeof (cmsg);
-
-    memset (buf, 0, sizeof (buf));
-    ssize_t count = recvmsg (manager.sd_notify_s, &msg, 0);
-
-    if (count == -1)
-    {
-        perror ("Receive sd_notify message!");
-    }
-    else if (msg.msg_flags & MSG_TRUNC)
-    {
-        s16_log (WARN, "Truncated message; not processing.");
-    }
-    else
-    {
-        if (cmsg.hdr.cmsg_type != SCM_CREDS)
-        {
-            s16_log (
-                WARN,
-                "Missing credentials in sd_notify message; not processing.\n");
-            return;
-        }
-
-        creds = (CREDS *)CMSG_DATA (&cmsg.hdr);
-        s16_log (DBG,
-                 "Received SystemD-style notification from pid %lu: <%s>\n",
-                 CREDS_PID (creds), buf);
-        dispatch_sd_notify (CREDS_PID (creds), buf);
-    }
-}
-
 /* TODO: Move to libs16 */
 void handle_signal (int sig)
 {
@@ -307,7 +186,7 @@ int main (int argc, char * argv[])
         perror ("KQueue: Failed to open\n");
     s16_cloexec (manager.kq);
 
-    setup_sd_notify ();
+    sd_notify_srv_setup (manager.kq);
 
     manager.pt = pt_new (manager.kq);
     timerset_init (&manager.ts, manager.kq);
@@ -371,13 +250,10 @@ int main (int argc, char * argv[])
         }
 
         timerset_investigate_kevent (&manager.ts, &ev);
+        sd_notify_srv_investigate_kevent (&ev);
 
         switch (ev.filter)
         {
-        case EVFILT_READ:
-            if (ev.ident == manager.sd_notify_s)
-                handle_sd_notify_recv ();
-            break;
 
         case EVFILT_SIGNAL:
             fprintf (stderr,

@@ -47,8 +47,6 @@ typedef struct manager_s
     // rreq_list_t rreq_queue;
     /* Timerset */
     timerset_t ts;
-    /* sd-notify compatibility socket */
-    int sd_notify_s;
 
     Unit_list_t units;
 
@@ -57,6 +55,13 @@ typedef struct manager_s
     int repo_retry_delay;
     long repo_retry_timer;
 } Manager;
+
+/* Set up the SystemD-style notification receiver. */
+void sd_notify_srv_setup (int kq);
+/* Clean up the SystemD notification receiver. */
+void sd_notify_srv_cleanup ();
+/* Check a KEvent received. */
+void sd_notify_srv_investigate_kevent (struct kevent * ev);
 
 /* Clean up everything after having forked. */
 void manager_fork_cleanup ();

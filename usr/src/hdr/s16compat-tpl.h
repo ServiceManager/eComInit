@@ -35,6 +35,7 @@ extern "C"
 #define S16_LIBEXECDIR S16_PREFIX "/@CMAKE_INSTALL_LIBEXECDIR@"
 
 #cmakedefine S16_PLAT_BSD
+#cmakedefine S16_ENABLE_SD_NOTIFY
 
 #ifdef __cplusplus
 }
