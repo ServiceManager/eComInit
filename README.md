@@ -85,8 +85,9 @@ These systems are regularly tested to ensure they work:
  * GNU/Linux
  * FreeBSD
  * NetBSD
+ * OpenBSD
 
-The other three BSDs (DragonFly, Open, and macOS) are also supported but have
+The other two BSDs (DragonFly and macOS) are also supported but have
 not been tested yet. On these platforms all core features should be available.
 Acting as a system manager on macOS is nontrivial to implement and out of
 scope, but as an auxiliary service manager, it should work.
