@@ -155,8 +155,11 @@ bool vtx_is_reachable (vertex_t * from, vertex_t * to, vertex_list_t * path_to)
         return false;
 }
 
-/* Adds a dependency to the given vertex, checking if it is cyclic. Returns 1 if
- * so.  */
+/*
+ * Adds a dependency to the given vertex, checking if it is cyclic.
+ * If cyclic, returns 1 and does not add the edges.
+ * Otherwise returns 0 and adds the edges.
+ */
 int vtx_dependency_add (vertex_t * v, vertex_t * to, vertex_list_t * path_to)
 {
     if (vtx_is_reachable (to, v, path_to))

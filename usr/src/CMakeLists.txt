@@ -6,7 +6,7 @@ include(GNUInstallDirs)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.1)
 project("System XVI")
 
 set(WARN_FLAGS "-Wall -Wno-unused-function -Wno-switch")
@@ -62,7 +62,7 @@ find_package(JNI)
 
 include_directories("${PROJECT_SOURCE_DIR}/hdr")
 include_directories("${CMAKE_SOURCE_DIR}")
-include_directories(${Readline_INCLUDE_DIR})
+#include_directories(${Readline_INCLUDE_DIR})
 
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 
@@ -87,6 +87,13 @@ endfunction(FIfUnset)
 FIfUnset(S16_ENABLE_JAVA TRUE)
 FIfUnset(S16_ENABLE_SD_NOTIFY TRUE)
 
+FIfUnset(S16_ENABLE_TESTS TRUE)
+if(S16_ENABLE_TESTS)
+  enable_testing()
+  add_subdirectory(../../external/googletest googletest)
+  add_subdirectory(../tests tests)
+endif()
+
 add_subdirectory(etc)
 
 add_subdirectory(vendor/lemon)
@@ -109,8 +116,8 @@ add_subdirectory(cmd/svccfg)
 add_subdirectory(cmd/svcnotify)
 add_subdirectory(cmd/svcs)
 
-add_subdirectory(test/cxx-build)
-add_custom_target(test DEPENDS test-cxx-build)
+#add_subdirectory(test/cxx-build)
+#add_custom_target(test DEPENDS test-cxx-build)
 
 function(FShow name flag)
     if(${flag})
@@ -123,3 +130,4 @@ endfunction(FShow)
 message("Feature settings:")
 FShow("Java" S16_ENABLE_JAVA)
 FShow("SystemD Notification Interface" S16_ENABLE_SD_NOTIFY)
+FShow("Tests" S16_ENABLE_TESTS)
