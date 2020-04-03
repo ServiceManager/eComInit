@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 2.8)
 project (s16rr)
 
 if (FREEBSD OR NETBSD OR OPENBSD OR DRAGONFLY)

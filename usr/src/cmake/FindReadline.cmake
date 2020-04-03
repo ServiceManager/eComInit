@@ -48,7 +48,7 @@ mark_as_advanced(
     Readline_LIBRARY
 )
 
-if(NOT TARGET Readline::Readline)
+if(READLINE_FOUND AND NOT TARGET Readline::Readline)
   add_library(Readline::Readline UNKNOWN IMPORTED)
   set_target_properties(Readline::Readline PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES "${Readline_INCLUDE_DIRS}"
