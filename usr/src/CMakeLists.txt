@@ -1,12 +1,13 @@
 include (CheckIncludeFiles)
 include (CheckLibraryExists)
 include (FindPkgConfig)
+include (GNUInstallDirs)
 include (cmake/LemFlex.cmake)
-include(GNUInstallDirs)
+include (cmake/S16Atf.cmake)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.6)
 project("System XVI")
 
 # add flags used in the entire project
@@ -17,6 +18,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 find_package(FLEX)
 find_package(Readline)
+find_package(PkgConfig)
 
 check_include_files(threads.h C11_THREADS)
 
@@ -28,6 +30,12 @@ endif()
 check_library_exists(stdthreads "mtx_lock" "" LIBSTDTHREADS)
 
 find_package(Libkqueue REQUIRED)
+pkg_check_modules(Atf-C IMPORTED_TARGET atf-c)
+
+if(NOT Atf-C_FOUND)
+    message("ATF not found; will not build test suite")
+    set(S16_ENABLE_TESTING FALSE)
+endif()
 
 if(UNIX AND NOT APPLE)
   if(CMAKE_SYSTEM_NAME MATCHES ".*Linux")
@@ -61,7 +69,6 @@ find_package(JNI)
 
 include_directories("${PROJECT_SOURCE_DIR}/hdr")
 include_directories("${CMAKE_SOURCE_DIR}")
-#include_directories(${Readline_INCLUDE_DIR})
 
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 
@@ -87,24 +94,24 @@ FIfUnset(S16_ENABLE_JAVA TRUE)
 FIfUnset(S16_ENABLE_SD_NOTIFY TRUE)
 
 FIfUnset(S16_ENABLE_TESTS TRUE)
+
 if(S16_ENABLE_TESTS)
   enable_testing()
-  add_subdirectory(../../external/googletest googletest)
+
   add_subdirectory(../tests tests)
+
+  installTopKyuafile("")
+  installTopKyuafile(lib)
+  installTopKyuafile(agent)
+  installTopKyuafile(cmd)
 endif()
 
-add_subdirectory(etc)
-
+# Build external first
 add_subdirectory(vendor/lemon)
-
 add_subdirectory(lib/ucl)
 add_subdirectory(lib/uthash)
 
-add_subdirectory(lib/s16)
-add_subdirectory(lib/s16rpc)
-add_subdirectory(lib/s16db)
-add_subdirectory(lib/s16rr)
-add_subdirectory(lib/s16systemd)
+add_subdirectory(etc)
 
 add_subdirectory(agent/restartd)
 add_subdirectory(agent/configd)
@@ -114,6 +121,12 @@ add_subdirectory(cmd/svcadm)
 add_subdirectory(cmd/svccfg)
 add_subdirectory(cmd/svcnotify)
 add_subdirectory(cmd/svcs)
+
+add_subdirectory(lib/s16)
+add_subdirectory(lib/s16rpc)
+add_subdirectory(lib/s16db)
+add_subdirectory(lib/s16rr)
+add_subdirectory(lib/s16systemd)
 
 #add_subdirectory(test/cxx-build)
 #add_custom_target(test DEPENDS test-cxx-build)

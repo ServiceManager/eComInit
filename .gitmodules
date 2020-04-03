@@ -7,6 +7,3 @@
 [submodule "external/SystemD"]
 	path = external/SystemD
 	url = git@github.com:System-XVI/SystemD.git
-[submodule "external/googletest"]
-	path = external/googletest
-	url = https://github.com/google/googletest.git

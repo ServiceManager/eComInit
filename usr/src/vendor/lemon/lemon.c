@@ -5012,9 +5012,6 @@ PRIVATE int translate_code (struct lemon * lemp, struct rule * rp)
         ++i;
     for (; i < rp->nrhs; i++)
     {
-        struct symbol * sp = rp->rhs[i];
-        int dtnum = sp_dtnum (sp);
-
         /* generate destructors for names RHS.
          * except last if lhsdirect!
          */

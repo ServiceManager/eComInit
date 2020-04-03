@@ -23,4 +23,14 @@
  * Use is subject to license terms.
  */
 
-#include "gtest/gtest.h"
+#include <atf-c.h>
+
+ATF_TC (tester);
+ATF_TC_HEAD (tester, tc) { atf_tc_set_md_var (tc, "descr", "This is a test"); }
+ATF_TC_BODY (tester, tc) { ATF_CHECK_STREQ ("Test", "Tsest"); }
+
+ATF_TP_ADD_TCS (tp)
+{
+    ATF_TP_ADD_TC (tp, tester);
+    return atf_no_error ();
+}
