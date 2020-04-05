@@ -50,7 +50,6 @@ ucl_object_t * s16db_path_to_ucl (path_t * path)
     ucl_object_t * upath = ucl_object_fromstring (spath);
     free (spath);
     return upath;
-    ;
 }
 
 const char * s16db_depgroup_type_to_string (int t)

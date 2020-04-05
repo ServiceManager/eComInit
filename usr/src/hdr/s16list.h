@@ -74,7 +74,7 @@ extern "C"
         return l;                                                              \
     }                                                                          \
                                                                                \
-    INLINE void name##_list_add (name##_list_t * n, type data)                 \
+    INLINE name##_list_t * name##_list_add (name##_list_t * n, type data)      \
     {                                                                          \
         name##_list_internal_t *temp, *t;                                      \
                                                                                \
@@ -98,6 +98,7 @@ extern "C"
             temp->Link = NULL;                                                 \
             t->Link = temp;                                                    \
         }                                                                      \
+        return n;                                                              \
     }                                                                          \
                                                                                \
     INLINE void name##_list_add_if_absent (name##_list_t * n, type data)       \
@@ -249,7 +250,7 @@ extern "C"
             return n->List->val;                                               \
         }                                                                      \
     }                                                                          \
-    INLINE void name##_list_lpush (name##_list_t * n, type data)               \
+    INLINE name##_list_t * name##_list_lpush (name##_list_t * n, type data)    \
     {                                                                          \
         name##_list_internal_t *temp, *t;                                      \
                                                                                \
@@ -271,6 +272,7 @@ extern "C"
             temp->Link = t;                                                    \
             n->List = temp;                                                    \
         }                                                                      \
+        return n;                                                              \
     }                                                                          \
     INLINE int name##_list_size (name##_list_t * n)                            \
     {                                                                          \

@@ -25,6 +25,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -71,6 +72,9 @@
 const int NOTE_RREQ = 18;
 
 Manager manager;
+
+struct option options[] = {{"system", no_argument, NULL, 'r'},
+                           {NULL, 0, NULL, 0}};
 
 void clean_exit () { sd_notify_srv_cleanup (); }
 
@@ -208,10 +212,7 @@ int main (int argc, char * argv[])
             s16note_new (N_RESTARTER_REQ, RR_START, configd->path, 0);
 
         configd->type = U_NOTIFY;
-        configd->methods[UM_PRESTART] = "/usr/bin/env echo PRESTART";
         configd->methods[UM_START] = "/opt/s16/libexec/s16.configd";
-        configd->methods[UM_POSTSTART] = "/usr/bin/env echo POSTSTART";
-        configd->methods[UM_STOP] = "/usr/bin/env echo STOP";
         configd->state = US_OFFLINE;
 
         unit_msg (configd, note);

@@ -220,7 +220,7 @@ int setup_dep (path_t * path, vertex_t * vg, vertex_list_t * path_to)
 {
     vertex_t * vdep;
 
-    assert (vdep = vtx_find_by_path (path));
+    assert ((vdep = vtx_find_by_path (path)));
 
     if (vtx_dependency_add (vg, vdep, path_to))
         return 1;
@@ -376,8 +376,6 @@ satisfied_t vtx_inst_satisfies_optional (vertex_t * v, bool recurse)
     {
     case S_UNINIT:
         return UNSATISFIED;
-    case S_DISABLED:
-        return SATISFIED;
     case S_OFFLINE:
         if (!recurse)
             return UNSATISFIED;
@@ -385,6 +383,7 @@ satisfied_t vtx_inst_satisfies_optional (vertex_t * v, bool recurse)
             return depgroup_is_satisfied (v, recurse) == UNSATISFIABLE
                        ? SATISFIED
                        : UNSATISFIED;
+    case S_DISABLED:
     case S_MAINTENANCE:
     case S_ONLINE:
     case S_DEGRADED:

@@ -25,12 +25,71 @@
 
 #include <atf-c.h>
 
-ATF_TC (tester);
-ATF_TC_HEAD (tester, tc) { atf_tc_set_md_var (tc, "descr", "This is a test"); }
-ATF_TC_BODY (tester, tc) { ATF_CHECK_STREQ ("Test", "Tsest"); }
+#include "s16db.h"
+
+svc_t make_svc () {}
+
+ATF_TC (convert_svc);
+ATF_TC_HEAD (convert_svc, tc)
+{
+    atf_tc_set_md_var (
+        tc, "descr",
+        "Test conversion of a service structure to and from JSON form.");
+}
+ATF_TC_BODY (convert_svc, tc)
+{
+    path_list_t paths = path_list_new ();
+    depgroup_list_t depgroups = depgroup_list_new ();
+    prop_list_t props = prop_list_new ();
+    meth_list_t meths = meth_list_new ();
+    inst_list_t insts = inst_list_new ();
+
+    const char * correct =
+        "{\"path\":\"svc:/"
+        "ex\",\"default-instance\":\"notdefault\",\"properties\":[{\"name\":"
+        "\"prop\",\"value\":\"propval\"}],\"methods\":[{\"name\":\"meth\","
+        "\"properties\":[{\"name\":\"prop\",\"value\":\"propval\"}]}],"
+        "\"instances\":[{\"path\":\"svc:/"
+        "ex:inst\",\"properties\":[{\"name\":\"prop\",\"value\":\"propval\"}],"
+        "\"methods\":[{\"name\":\"meth\",\"properties\":[{\"name\":\"prop\","
+        "\"value\":\"propval\"}]}],\"dependencies\":[{\"grouping\":\"optional-"
+        "all\",\"restart-on\":\"refresh\",\"paths\":[\"svc:/"
+        "dep:depinst\"]}],\"enabled\":false,\"state\":4}],\"dependencies\":[{"
+        "\"grouping\":\"optional-all\",\"restart-on\":\"refresh\",\"paths\":["
+        "\"svc:/dep:depinst\"]}],\"state\":0}";
+
+    depgroup_t dg = {
+        .name = "dg",
+        .type = OPTIONAL_ALL,
+        .restart_on = ON_REFRESH,
+        .paths = *path_list_add (&paths, s16_path_new ("dep", "depinst"))};
+
+    property_t prop = {
+        .name = "prop", .type = PROP_STRING, .value.s = "propval"};
+
+    method_t meth = {.name = "meth", .props = *prop_list_add (&props, &prop)};
+
+    svc_instance_t inst = {.path = s16_path_new ("ex", "inst"),
+                           .props = props,
+                           .meths = *meth_list_add (&meths, &meth),
+                           .depgroups = *depgroup_list_add (&depgroups, &dg),
+                           .state = S_MAINTENANCE};
+
+    svc_t svc = {.path = s16_path_new ("ex", NULL),
+                 .def_inst = "notdefault",
+                 .props = props,
+                 .meths = meths,
+                 .insts = *inst_list_add (&insts, &inst),
+                 .depgroups = depgroups};
+
+    char * converted = (char *)ucl_object_emit (s16db_svc_to_ucl (&svc),
+                                                UCL_EMIT_JSON_COMPACT);
+
+    ATF_CHECK_STREQ (converted, correct);
+}
 
 ATF_TP_ADD_TCS (tp)
 {
-    ATF_TP_ADD_TC (tp, tester);
+    ATF_TP_ADD_TC (tp, convert_svc);
     return atf_no_error ();
 }

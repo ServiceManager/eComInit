@@ -16,7 +16,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARN_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS}")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-find_package(FLEX)
+find_package(FLEX REQUIRED)
 find_package(Readline)
 find_package(PkgConfig)
 
@@ -29,12 +29,12 @@ endif()
 
 check_library_exists(stdthreads "mtx_lock" "" LIBSTDTHREADS)
 
-find_package(Libkqueue REQUIRED)
-pkg_check_modules(Atf-C IMPORTED_TARGET atf-c)
+find_package(Kqueue REQUIRED)
+find_package(Atf-C)
 
 if(NOT Atf-C_FOUND)
     message("ATF not found; will not build test suite")
-    set(S16_ENABLE_TESTING FALSE)
+    set(S16_ENABLE_TESTS FALSE)
 endif()
 
 if(UNIX AND NOT APPLE)
