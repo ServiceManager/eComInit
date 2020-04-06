@@ -63,7 +63,7 @@ extern "C"
 
     typedef struct s16r_struct_description
     {
-        void * unused;
+        size_t len;
         s16r_field_description fields[];
     } s16r_struct_description;
 

@@ -58,6 +58,7 @@ typedef struct
 } testStruct2;
 
 s16r_struct_description testDesc1 = {
+    .len = sizeof (testStruct1),
     .fields = {{.name = "tD1A",
                 .type = {.kind = INT},
                 .off = offsetof (testStruct1, a)},
@@ -69,6 +70,7 @@ s16r_struct_description testDesc1 = {
 s16r_type testType1 = {.kind = STRUCT, .sdesc = &testDesc1};
 
 s16r_struct_description testDesc2 = {
+    .len = sizeof (testStruct2),
     .fields = {{.name = "tD2A",
                 .type = {.kind = STRUCT, .sdesc = &testDesc1},
                 .off = offsetof (testStruct2, a)},
@@ -84,9 +86,9 @@ s16r_struct_description testDesc2 = {
                 .off = offsetof (testStruct2, c)},
                {.name = NULL}}};
 
-ucl_object_t * convert (void ** src, s16r_type * field);
+ucl_object_t * serialise (void ** src, s16r_type * field);
 
-ucl_object_t * convertStruct (void * src, s16r_struct_description * desc)
+ucl_object_t * serialiseStruct (void * src, s16r_struct_description * desc)
 {
     ucl_object_t * out = ucl_object_typed_new (UCL_OBJECT);
     s16r_field_description * field;
@@ -94,26 +96,26 @@ ucl_object_t * convertStruct (void * src, s16r_struct_description * desc)
     for (int i = 0; (field = &desc->fields[i]) && field->name; i++)
     {
         void * member = ((char *)src + field->off);
-        ucl_object_insert_key (out, convert (member, &field->type), field->name,
-                               0, true);
+        ucl_object_insert_key (out, serialise (member, &field->type),
+                               field->name, 0, true);
     }
 
     return out;
 }
 
-ucl_object_t * convertList (void * src, s16r_type * type)
+ucl_object_t * serialiseList (void * src, s16r_type * type)
 {
     ucl_object_t * out = ucl_object_typed_new (UCL_ARRAY);
 
     LL_each ((void_list_t *)src, el)
     {
-        ucl_array_append (out, convert (&el->val, type));
+        ucl_array_append (out, serialise (&el->val, type));
     }
 
     return out;
 }
 
-ucl_object_t * convert (void ** src, s16r_type * type)
+ucl_object_t * serialise (void ** src, s16r_type * type)
 {
     switch (type->kind)
     {
@@ -127,10 +129,78 @@ ucl_object_t * convert (void ** src, s16r_type * type)
         return ucl_object_fromint (*(int *)src);
 
     case STRUCT:
-        return convertStruct (*src, type->sdesc);
+        return serialiseStruct (*src, type->sdesc);
 
     case LIST:
-        return convertList (src, type->ltype);
+        return serialiseList (src, type->ltype);
+
+    default:
+        assert ("Should not be reached.");
+    }
+}
+
+/*
+ * Deserialisation
+ */
+
+void deserialise (const ucl_object_t * src, s16r_type * field, void * dest);
+
+void deserialiseStruct (const ucl_object_t * src,
+                        s16r_struct_description * desc, void * dest)
+{
+    s16r_field_description * field;
+    void * struc = malloc (desc->len);
+
+    for (int i = 0; (field = &desc->fields[i]) && field->name; i++)
+    {
+        const ucl_object_t * obj = ucl_object_lookup (src, field->name);
+        void * member = ((char *)struc + field->off);
+
+        deserialise (obj, &field->type, member);
+    }
+
+    *(void **)dest = struc;
+}
+
+void deserialiseList (const ucl_object_t * src, s16r_type * type, void * dest)
+{
+    const ucl_object_t * el;
+    ucl_object_iter_t it = NULL;
+
+    *(void_list_t *)dest = void_list_new ();
+
+    while ((el = ucl_iterate_object (src, &it, true)))
+    {
+        /* n.b. what about lists? they aren't officially able to do this */
+        void * val;
+        deserialise (el, type, &val);
+        void_list_add (dest, val);
+    }
+}
+
+void deserialise (const ucl_object_t * src, s16r_type * type, void * dest)
+{
+    switch (type->kind)
+    {
+    case STRING:
+        *(char **)dest = ucl_object_tostring (src);
+        break;
+
+    case BOOL:
+        *(bool *)dest = ucl_object_toboolean (src);
+        break;
+
+    case INT:
+        *(int *)dest = ucl_object_toint (src);
+        break;
+
+    case STRUCT:
+        deserialiseStruct (src, type->sdesc, dest);
+        break;
+
+    case LIST:
+        deserialiseList (src, type->ltype, dest);
+        break;
 
     default:
         assert ("Should not be reached.");
@@ -141,11 +211,20 @@ int main ()
 {
     testStruct1 test1 = {.a = 55, .b = "Hello"};
     testStruct2 test2 = {.a = &test1, .b = "World"};
+    ucl_object_t * obj;
+    testStruct2 * test3;
 
     void_list_lpush (&test2.c, &test1);
 
-    printf ("Out: %s\n", ucl_object_emit (convertStruct (&test2, &testDesc2),
-                                          UCL_EMIT_JSON));
+    obj = serialiseStruct (&test2, &testDesc2);
+
+    printf ("Out: %s\n", ucl_object_emit (obj, UCL_EMIT_JSON));
+
+    deserialiseStruct (obj, &testDesc2, &test3);
+
+    obj = serialiseStruct (test3, &testDesc2);
+
+    printf ("Out: %s\n", ucl_object_emit (obj, UCL_EMIT_JSON));
 
     return 0;
 }
