@@ -14,7 +14,7 @@ endif()
 
 add_library (s16 SHARED 
   mem.c misc.c s16.c 
-  rpc/rpc.c 
+  rpc/rpc.c
   db/convert.c db/local.c db/rpc.c
   rr/process.c rr/process-tracker/pt-driver-${PT_DRIVER}.c)
 
@@ -26,7 +26,8 @@ else()
 endif()
 
 target_link_libraries (s16 ucl uthash Kqueue::Kqueue)
-target_include_directories(s16 PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
+target_include_directories(s16 PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
 set(S16_HEADERS
   ${PROJECT_BINARY_DIR}/s16compat.h
@@ -44,6 +45,9 @@ install(TARGETS s16 DESTINATION ${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION include
         )
 
+
+        add_executable (tester newrpc/struct.c)
+        target_link_libraries (tester s16)
 #
 # Tests
 #
