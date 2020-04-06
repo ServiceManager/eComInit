@@ -10,6 +10,6 @@ add_executable (svccfg
 # For our Flex and Lemon files:
 target_include_directories(svccfg PRIVATE ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR})
 
-target_link_libraries (svccfg s16 s16db s16rpc uthash ucl ${LIBKQUEUE_LIBRARY} Readline::Readline)
+target_link_libraries (svccfg s16 uthash ucl Kqueue::Kqueue Readline::Readline)
 
 install(TARGETS svccfg RUNTIME DESTINATION ${CMAKE_INSTALL_SBINDIR})

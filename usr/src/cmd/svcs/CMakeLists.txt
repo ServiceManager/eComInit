@@ -3,6 +3,6 @@ project (svcs)
 
 add_executable (svcs svcs.c)
 
-target_link_libraries (svcs s16 s16db s16rpc ucl ${LIBKQUEUE_LIBRARY})
+target_link_libraries (svcs s16 ucl)
 
 install(TARGETS svcs RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

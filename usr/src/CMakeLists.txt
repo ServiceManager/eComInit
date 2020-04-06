@@ -123,9 +123,6 @@ add_subdirectory(cmd/svcnotify)
 add_subdirectory(cmd/svcs)
 
 add_subdirectory(lib/s16)
-add_subdirectory(lib/s16rpc)
-add_subdirectory(lib/s16db)
-add_subdirectory(lib/s16rr)
 add_subdirectory(lib/s16systemd)
 
 #add_subdirectory(test/cxx-build)
