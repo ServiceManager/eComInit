@@ -107,6 +107,7 @@ endif()
 
 # Build external first
 add_subdirectory(vendor/lemon)
+add_subdirectory(lib/nv)
 add_subdirectory(lib/ucl)
 add_subdirectory(lib/uthash)
 

@@ -1,0 +1,1 @@
+add_subdirectory (${CMAKE_SOURCE_DIR}/../../external/libnv-portable libnv-portable)

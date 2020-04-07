@@ -33,19 +33,22 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "nv.h"
 #include "s16list.h"
 #include "s16newrpc.h"
 #include "ucl.h"
 
 S16List (void, void *);
 
-const char * s16r_kind_str[S16R_KMAX] = {"String", "Boolean", "Int", "Struct",
-                                         "List"};
+const char * s16r_kind_str[S16R_KMAX] = {"String", "Boolean", "Int",
+                                         "Struct", "List",    "Right"};
 
 typedef struct
 {
     int a;
     const char * b;
+    int c;
+    bool d;
 } testStruct1;
 
 S16List (test1, testStruct1 *);
@@ -65,6 +68,12 @@ s16r_struct_description testDesc1 = {
                {.name = "tD1B",
                 .type = {.kind = S16R_KSTRING},
                 .off = offsetof (testStruct1, b)},
+               {.name = "tD1C",
+                .type = {.kind = S16R_KDESCRIPTOR},
+                .off = offsetof (testStruct1, c)},
+               {.name = "tD1D",
+                .type = {.kind = S16R_KBOOL},
+                .off = offsetof (testStruct1, d)},
                {.name = NULL}}};
 
 s16r_type testType1 = {.kind = S16R_KSTRUCT, .sdesc = &testDesc1};
@@ -86,56 +95,73 @@ s16r_struct_description testDesc2 = {
                 .off = offsetof (testStruct2, c)},
                {.name = NULL}}};
 
-ucl_object_t * serialise (void ** src, s16r_type * field);
+void serialise (nvlist_t * nvl, const char * name, void ** src,
+                s16r_type * field);
 
-ucl_object_t * serialiseStruct (void * src, s16r_struct_description * desc)
+nvlist_t * serialiseStruct (void * src, s16r_struct_description * desc)
 {
-    ucl_object_t * out = ucl_object_typed_new (UCL_OBJECT);
+    nvlist_t * nvl = nvlist_create (0);
     s16r_field_description * field;
 
     for (int i = 0; (field = &desc->fields[i]) && field->name; i++)
     {
         void * member = ((char *)src + field->off);
-        ucl_object_insert_key (out, serialise (member, &field->type),
-                               field->name, 0, true);
+        serialise (nvl, field->name, member, &field->type);
     }
 
-    return out;
+    return nvl;
 }
 
-ucl_object_t * serialiseList (void * src, s16r_type * type)
+nvlist_t * serialiseList (void * src, s16r_type * type)
 {
-    ucl_object_t * out = ucl_object_typed_new (UCL_ARRAY);
+    nvlist_t * nvl = nvlist_create (0);
+    char namebuf[8];
+    int i = 0;
 
     LL_each ((void_list_t *)src, el)
     {
-        ucl_array_append (out, serialise (&el->val, type));
+        snprintf (namebuf, 8, "%i", i++);
+        serialise (nvl, namebuf, &el->val, type);
     }
 
-    return out;
+    return nvl;
 }
 
-ucl_object_t * serialise (void ** src, s16r_type * type)
+/*
+ * Serialises the data at @src, of type described by @type, into the nvlist
+ * @nvl, under the name @name.
+ */
+void serialise (nvlist_t * nvl, const char * name, void ** src,
+                s16r_type * type)
 {
     switch (type->kind)
     {
     case S16R_KSTRING:
-        return ucl_object_fromstring (*src);
+        nvlist_add_string (nvl, name, *(char **)src);
+        break;
 
     case S16R_KBOOL:
-        return ucl_object_frombool (*(bool *)src);
+        nvlist_add_bool (nvl, name, *(bool *)src);
+        break;
 
     case S16R_KINT:
-        return ucl_object_fromint (*(int *)src);
+        nvlist_add_number (nvl, name, *(int *)src);
+        break;
 
     case S16R_KSTRUCT:
-        return serialiseStruct (*src, type->sdesc);
+        nvlist_move_nvlist (nvl, name, serialiseStruct (*src, type->sdesc));
+        break;
 
     case S16R_KLIST:
-        return serialiseList (src, type->ltype);
+        nvlist_move_nvlist (nvl, name, serialiseList (src, type->ltype));
+        break;
+
+    case S16R_KDESCRIPTOR:
+        nvlist_add_descriptor (nvl, name, *(int *)src);
+        break;
 
     default:
-        assert ("Should not be reached.");
+        assert (!"Should not be reached.");
     }
 }
 
@@ -143,88 +169,159 @@ ucl_object_t * serialise (void ** src, s16r_type * type)
  * Deserialisation
  */
 
-void deserialise (const ucl_object_t * src, s16r_type * field, void * dest);
+void deserialiseList (nvlist_t * nvl, s16r_type * type, void ** dest);
+void deserialiseStruct (nvlist_t * nvl, s16r_struct_description * desc,
+                        void ** dest);
 
-void deserialiseStruct (const ucl_object_t * src,
-                        s16r_struct_description * desc, void * dest)
+void deserialiseMember (nvlist_t * nvl, const char * name, s16r_type * type,
+                        void ** dest)
+{
+    switch (type->kind)
+    {
+    case S16R_KSTRING:
+        *(char **)dest = nvlist_take_string (nvl, name);
+        break;
+
+    case S16R_KBOOL:
+        *(bool *)dest = nvlist_get_bool (nvl, name);
+        break;
+
+    case S16R_KINT:
+        *(int *)dest = nvlist_get_number (nvl, name);
+        break;
+
+    case S16R_KSTRUCT:
+        /* 'Take' cannot be used here. */
+        deserialiseStruct ((nvlist_t *)nvlist_get_nvlist (nvl, name),
+                           type->sdesc, dest);
+        break;
+
+    case S16R_KLIST:
+        deserialiseList ((nvlist_t *)nvlist_get_nvlist (nvl, name), type->ltype,
+                         dest);
+        break;
+
+    case S16R_KDESCRIPTOR:
+        *(int *)dest = nvlist_take_descriptor (nvl, name);
+        break;
+
+    default:
+        assert (!"Should not be reached.");
+    }
+}
+
+void deserialiseStruct (nvlist_t * nvl, s16r_struct_description * desc,
+                        void ** dest)
 {
     s16r_field_description * field;
     void * struc = malloc (desc->len);
 
     for (int i = 0; (field = &desc->fields[i]) && field->name; i++)
     {
-        const ucl_object_t * obj = ucl_object_lookup (src, field->name);
         void * member = ((char *)struc + field->off);
 
-        deserialise (obj, &field->type, member);
+        deserialiseMember (nvl, field->name, &field->type, member);
     }
 
-    *(void **)dest = struc;
+    *dest = struc;
 }
 
-void deserialiseList (const ucl_object_t * src, s16r_type * type, void * dest)
+void deserialiseList (nvlist_t * nvl, s16r_type * type, void ** dest)
 {
-    const ucl_object_t * el;
-    ucl_object_iter_t it = NULL;
+    const char * name;
+    void * cookie = NULL;
+    int nvtype;
+    void_list_t * list = (void_list_t *)dest;
 
-    *(void_list_t *)dest = void_list_new ();
+    *list = void_list_new ();
 
-    while ((el = ucl_iterate_object (src, &it, true)))
+    while ((name = nvlist_next (nvl, &nvtype, &cookie)))
     {
-        /* n.b. what about lists? they aren't officially able to do this */
-        void * val;
-        deserialise (el, type, &val);
-        void_list_add (dest, val);
+        void * dat;
+        deserialiseMember (nvl, name, type, &dat);
+        void_list_add (list, dat);
     }
 }
 
-void deserialise (const ucl_object_t * src, s16r_type * type, void * dest)
+ucl_object_t * nvlist_to_ucl (const nvlist_t * nvl)
 {
-    switch (type->kind)
+    ucl_object_t * obj = ucl_object_typed_new (UCL_OBJECT);
+    const char * name;
+    void * cookie = NULL;
+    int type;
+
+    while ((name = nvlist_next (nvl, &type, &cookie)) != NULL)
     {
-    case S16R_KSTRING:
-        *(char **)dest = ucl_object_tostring (src);
-        break;
+        switch (type)
+        {
+        case NV_TYPE_STRING:
+            ucl_object_insert_key (
+                obj, ucl_object_fromstring (nvlist_get_string (nvl, name)),
+                name, 0, false);
+            break;
 
-    case S16R_KBOOL:
-        *(bool *)dest = ucl_object_toboolean (src);
-        break;
+        case NV_TYPE_BOOL:
+            ucl_object_insert_key (
+                obj, ucl_object_frombool (nvlist_get_bool (nvl, name)), name, 0,
+                false);
+            break;
 
-    case S16R_KINT:
-        *(int *)dest = ucl_object_toint (src);
-        break;
+        case NV_TYPE_NUMBER:
+            ucl_object_insert_key (
+                obj, ucl_object_fromint (nvlist_get_number (nvl, name)), name,
+                0, false);
+            break;
 
-    case S16R_KSTRUCT:
-        deserialiseStruct (src, type->sdesc, dest);
-        break;
+        case NV_TYPE_NVLIST:
+            ucl_object_insert_key (
+                obj, nvlist_to_ucl (nvlist_get_nvlist (nvl, name)), name, 0,
+                false);
+            break;
 
-    case S16R_KLIST:
-        deserialiseList (src, type->ltype, dest);
-        break;
+        case NV_TYPE_DESCRIPTOR:
+            ucl_object_insert_key (
+                obj, ucl_object_fromint (nvlist_get_descriptor (nvl, name)),
+                name, 0, false);
+            break;
 
-    default:
-        assert ("Should not be reached.");
+        default:
+            assert (!"Unsupported NVList entry type.");
+            break;
+        }
     }
+
+    return obj;
 }
 
 int main ()
 {
-    testStruct1 test1 = {.a = 55, .b = "Hello"};
+    testStruct1 test1 = {.a = 55, .b = "Hello", .c = 1, .d = false};
     testStruct2 test2 = {.a = &test1, .b = "World"};
-    ucl_object_t * obj;
+    nvlist_t * nvl;
     testStruct2 * test3;
+    char * str;
+    ucl_object_t * obj;
 
-    void_list_lpush (&test2.c, &test1);
+    test1_list_lpush (&test2.c, &test1);
 
-    obj = serialiseStruct (&test2, &testDesc2);
+    nvl = serialiseStruct (&test2, &testDesc2);
+    obj = nvlist_to_ucl (nvl);
+    str = (char *)ucl_object_emit (obj, UCL_EMIT_JSON);
+    printf ("First serialisation: %s\n", str);
+    ucl_object_unref (obj);
+    free (str);
 
-    printf ("Out: %s\n", ucl_object_emit (obj, UCL_EMIT_JSON));
+    deserialiseStruct (nvl, &testDesc2, (void **)&test3);
+    nvlist_destroy (nvl);
 
-    deserialiseStruct (obj, &testDesc2, &test3);
+    nvl = serialiseStruct (test3, &testDesc2);
+    obj = nvlist_to_ucl (nvl);
+    str = (char *)ucl_object_emit (obj, UCL_EMIT_JSON);
+    printf ("Second serialisation: %s\n", str);
+    ucl_object_unref (obj);
+    free (str);
 
-    obj = serialiseStruct (test3, &testDesc2);
-
-    printf ("Out: %s\n", ucl_object_emit (obj, UCL_EMIT_JSON));
+    nvlist_destroy (nvl);
 
     return 0;
 }

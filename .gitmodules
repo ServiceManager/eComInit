@@ -7,3 +7,6 @@
 [submodule "external/SystemD"]
 	path = external/SystemD
 	url = git@github.com:System-XVI/SystemD.git
+[submodule "external/libnv-portable"]
+	path = external/libnv-portable
+	url = git@github.com:System-XVI/libnv-portable.git

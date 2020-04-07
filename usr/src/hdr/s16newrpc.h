@@ -39,8 +39,8 @@ extern "C"
         S16R_KBOOL,
         S16R_KINT,
         S16R_KSTRUCT,
-        S16R_KLIST,
-        S16R_KFD,
+        S16R_KLIST,       /* An S16 list */
+        S16R_KDESCRIPTOR, /* Unix rights */
         S16R_KMAX
     } s16r_kind;
 
@@ -70,12 +70,18 @@ extern "C"
         s16r_field_description fields[];
     } s16r_struct_description;
 
+    typedef struct s16r_message_arg_signature
+    {
+        const char * name;
+        s16r_type type;
+    } s16r_message_arg_signature;
+
     typedef struct s16r_message_signature
     {
         /* Return type of the message. */
         s16r_type rtype;
         /* Arguments */
-        s16r_type args[];
+        s16r_message_arg_signature args[];
     } s16r_message_signature;
 
 #ifdef __cplusplus

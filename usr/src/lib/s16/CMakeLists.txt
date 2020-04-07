@@ -25,7 +25,7 @@ else()
   target_link_libraries (s16 pthread)
 endif()
 
-target_link_libraries (s16 ucl uthash Kqueue::Kqueue)
+target_link_libraries (s16 ucl uthash nvp Kqueue::Kqueue)
 target_include_directories(s16 PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
@@ -46,8 +46,8 @@ install(TARGETS s16 DESTINATION ${CMAKE_INSTALL_LIBDIR}
         )
 
 
-        add_executable (tester newrpc/struct.c)
-        target_link_libraries (tester s16)
+add_executable (tester newrpc/struct.c)
+target_link_libraries (tester s16)
 #
 # Tests
 #
