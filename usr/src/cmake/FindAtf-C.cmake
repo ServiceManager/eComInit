@@ -1,8 +1,5 @@
-include (FindPkgConfig)
-
-message("Searching for ATF-C")
-
-pkg_check_modules(Atf-C IMPORTED_TARGET atf-c)
+find_package(PkgConfig QUIET)
+pkg_check_modules(Atf-C QUIET IMPORTED_TARGET atf-c)
 
 if(NOT Atf-C_FOUND)
 	find_path(Atf-C_INCLUDE_DIR atf-c.h

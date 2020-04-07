@@ -1,14 +1,13 @@
+cmake_minimum_required(VERSION 3.6)
+project("System XVI" LANGUAGES C)
+
 include (CheckIncludeFiles)
 include (CheckLibraryExists)
-include (FindPkgConfig)
 include (GNUInstallDirs)
 include (cmake/LemFlex.cmake)
 include (cmake/S16Atf.cmake)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
-
-cmake_minimum_required(VERSION 3.6)
-project("System XVI")
 
 # add flags used in the entire project
 set(WARN_FLAGS "-Wall -Wno-unused-function -Wno-switch")

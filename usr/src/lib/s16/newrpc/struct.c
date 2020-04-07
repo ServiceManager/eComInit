@@ -60,27 +60,27 @@ typedef struct
 s16r_struct_description testDesc1 = {
     .len = sizeof (testStruct1),
     .fields = {{.name = "tD1A",
-                .type = {.kind = INT},
+                .type = {.kind = S16R_KINT},
                 .off = offsetof (testStruct1, a)},
                {.name = "tD1B",
-                .type = {.kind = STRING},
+                .type = {.kind = S16R_KSTRING},
                 .off = offsetof (testStruct1, b)},
                {.name = NULL}}};
 
-s16r_type testType1 = {.kind = STRUCT, .sdesc = &testDesc1};
+s16r_type testType1 = {.kind = S16R_KSTRUCT, .sdesc = &testDesc1};
 
 s16r_struct_description testDesc2 = {
     .len = sizeof (testStruct2),
     .fields = {{.name = "tD2A",
-                .type = {.kind = STRUCT, .sdesc = &testDesc1},
+                .type = {.kind = S16R_KSTRUCT, .sdesc = &testDesc1},
                 .off = offsetof (testStruct2, a)},
                {.name = "tD2B",
-                .type = {.kind = STRING},
+                .type = {.kind = S16R_KSTRING},
                 .off = offsetof (testStruct2, b)},
                {.name = "tD2C",
                 .type =
                     {
-                        .kind = LIST,
+                        .kind = S16R_KLIST,
                         .ltype = &testType1,
                     },
                 .off = offsetof (testStruct2, c)},
@@ -119,19 +119,19 @@ ucl_object_t * serialise (void ** src, s16r_type * type)
 {
     switch (type->kind)
     {
-    case STRING:
+    case S16R_KSTRING:
         return ucl_object_fromstring (*src);
 
-    case BOOL:
+    case S16R_KBOOL:
         return ucl_object_frombool (*(bool *)src);
 
-    case INT:
+    case S16R_KINT:
         return ucl_object_fromint (*(int *)src);
 
-    case STRUCT:
+    case S16R_KSTRUCT:
         return serialiseStruct (*src, type->sdesc);
 
-    case LIST:
+    case S16R_KLIST:
         return serialiseList (src, type->ltype);
 
     default:
@@ -182,23 +182,23 @@ void deserialise (const ucl_object_t * src, s16r_type * type, void * dest)
 {
     switch (type->kind)
     {
-    case STRING:
+    case S16R_KSTRING:
         *(char **)dest = ucl_object_tostring (src);
         break;
 
-    case BOOL:
+    case S16R_KBOOL:
         *(bool *)dest = ucl_object_toboolean (src);
         break;
 
-    case INT:
+    case S16R_KINT:
         *(int *)dest = ucl_object_toint (src);
         break;
 
-    case STRUCT:
+    case S16R_KSTRUCT:
         deserialiseStruct (src, type->sdesc, dest);
         break;
 
-    case LIST:
+    case S16R_KLIST:
         deserialiseList (src, type->ltype, dest);
         break;
 

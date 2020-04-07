@@ -35,11 +35,12 @@ extern "C"
 
     typedef enum
     {
-        STRING,
-        BOOL,
-        INT,
-        STRUCT,
-        LIST,
+        S16R_KSTRING,
+        S16R_KBOOL,
+        S16R_KINT,
+        S16R_KSTRUCT,
+        S16R_KLIST,
+        S16R_KFD,
         S16R_KMAX
     } s16r_kind;
 
@@ -58,14 +59,24 @@ extern "C"
     {
         const char * name;
         s16r_type type;
+        /* Offset of this field into the corresponding struct. */
         size_t off;
     } s16r_field_description;
 
     typedef struct s16r_struct_description
     {
+        /* Total size of this struct. */
         size_t len;
         s16r_field_description fields[];
     } s16r_struct_description;
+
+    typedef struct s16r_message_signature
+    {
+        /* Return type of the message. */
+        s16r_type rtype;
+        /* Arguments */
+        s16r_type args[];
+    } s16r_message_signature;
 
 #ifdef __cplusplus
 }
