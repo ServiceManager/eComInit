@@ -85,6 +85,7 @@ extern "C"
 
     typedef struct s16r_message_signature
     {
+        const char * name;
         /* Return type of the message. */
         s16r_type rtype;
         /* Arguments */
@@ -144,8 +145,9 @@ extern "C"
 
     s16r_srv_t * s16r_srv_new (void * extra);
     /* Registers a method with the server. */
-    void s16rpc_srv_register_method (s16r_srv_t * srv, const char * name,
-                                     s16r_fun_t fun);
+    void s16r_srv_register_method (s16r_srv_t * srv,
+                                   s16r_message_signature * sig,
+                                   s16r_fun_t fun);
 
     void testIt ();
 

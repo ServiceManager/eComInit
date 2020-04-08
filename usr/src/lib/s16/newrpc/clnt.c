@@ -57,7 +57,7 @@ typedef void * (*s16r_fun4_t) (s16r_data_t *, const void *, const void *,
 
 static bool matchMeth (s16r_method_t * meth, void * str)
 {
-    return !strcmp (meth->name, str);
+    return !strcmp (meth->sig->name, str);
 }
 
 static s16r_method_t * findMeth (s16r_srv_t * srv, const char * name)
@@ -103,8 +103,8 @@ void * s16r_dispatch_fun (s16r_data_t * dat, s16r_method_t * meth,
     case 3:
         return ((s16r_fun3_t)meth->fun) (dat, Param (0), Param (1), Param (2));
     case 4:
-        return ((s16r_fun4_t)meth->fun) (dat, Param (0), Param (1), Param (2),
-                                         Param (3));
+        return ((s16r_fun4_t)meth->fun) (
+            dat, Param (0), Param (1), Param (2), Param (3));
     default:
         printf ("Unsupported parameter count!\n");
         return NULL;
@@ -179,11 +179,10 @@ nvlist_t * s16r_handle_request (s16r_srv_t * srv, nvlist_t * req)
     return response;
 }
 
-void s16r_srv_register_method (s16r_srv_t * srv, const char * name,
-                               s16r_fun_t fun, s16r_message_signature * sig)
+void s16r_srv_register_method (s16r_srv_t * srv, s16r_message_signature * sig,
+                               s16r_fun_t fun)
 {
     s16r_method_t * meth = malloc (sizeof (*meth));
-    meth->name = name;
     meth->fun = fun;
     meth->sig = sig;
     s16r_method_list_add (&srv->meths, meth);
@@ -212,6 +211,7 @@ typedef struct
 } argStruct;
 
 s16r_message_signature testMethSig = {
+    .name = "TestMeth",
     .rtype = {.kind = S16R_KSTRING},
     .nargs = 2,
     .args = {{.name = "argA", .type = {.kind = S16R_KSTRING}},
@@ -223,7 +223,7 @@ void testIt ()
     s16r_srv_t * srv = s16r_srv_new (NULL);
     nvlist_t *req = nvlist_create (0), *params = nvlist_create (0), *res = NULL;
 
-    s16r_srv_register_method (srv, "TestMeth", testFun, &testMethSig);
+    s16r_srv_register_method (srv, &testMethSig, testFun);
 
     nvlist_add_string (params, "argA", "Hello");
     nvlist_add_string (params, "argB", "World");

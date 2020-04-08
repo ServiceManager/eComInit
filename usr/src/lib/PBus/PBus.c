@@ -42,14 +42,14 @@ static bool matchObject (PBusObject * o, const char * n)
 }
 
 static nvlist_t * dispatchMessage (PBusObject * self, void * user,
-                                   const char * selfPath, const char * selector,
-                                   nvlist_t * params)
+                                   const char * fullPath, const char * selfPath,
+                                   const char * selector, nvlist_t * params)
 {
     PBusInvocationContext ctx = {
         .selfPath = selfPath, .user = user, .selector = selector};
 
-    if (self->fnDispatchMessage)
-        return self->fnDispatchMessage (self, &ctx, params);
+    if (self->aIsA->fnDispatchMessage)
+        return self->aIsA->fnDispatchMessage (self, &ctx, params);
     else
     {
         return NULL;
@@ -57,29 +57,35 @@ static nvlist_t * dispatchMessage (PBusObject * self, void * user,
 }
 
 static nvlist_t * findReceiver (PBusObject * self, void * extraData,
-                                const char * selfPath,
+                                const char * fullPath, const char * selfPath,
                                 PBusPathElement_list_t * remainingPath,
                                 const char * selector, nvlist_t * params)
 {
     if (LL_empty (remainingPath))
-        return dispatchMessage (self, extraData, selfPath, selector, params);
+        return dispatchMessage (
+            self, extraData, fullPath, selfPath, selector, params);
     else
     {
         char * next = PBusPathElement_list_lpop (remainingPath);
 
-        if (self->fnResolveSubObject)
+        if (self->aIsA->fnResolveSubObject)
         {
-            self = self->fnResolveSubObject (
-                self, &extraData, next, remainingPath, selector);
+            self = self->aIsA->fnResolveSubObject (
+                self, &extraData, fullPath, next, remainingPath, selector);
             if (!self)
                 return /* ERROR */ NULL;
-            return findReceiver (
-                self, extraData, next, remainingPath, selector, params);
+            return findReceiver (self,
+                                 extraData,
+                                 fullPath,
+                                 next,
+                                 remainingPath,
+                                 selector,
+                                 params);
         }
         else
         {
             PBusObject_list_it it =
-                PBusObject_list_find (&self->subObjects,
+                PBusObject_list_find (&self->aSubObjects,
                                       (PBusObject_list_find_fn)matchObject,
                                       (void *)next);
             if (!it)
@@ -89,6 +95,7 @@ static nvlist_t * findReceiver (PBusObject * self, void * extraData,
             }
             return findReceiver (list_it_val (it),
                                  extraData,
+                                 fullPath,
                                  next,
                                  remainingPath,
                                  selector,
@@ -97,40 +104,80 @@ static nvlist_t * findReceiver (PBusObject * self, void * extraData,
     }
 }
 
-static nvlist_t * findReceiver_root (PBusServer * srv,
-                                     PBusPathElement_list_t * path,
+static nvlist_t * findReceiver_root (PBusServer * srv, const char * path,
                                      const char * selector, nvlist_t * params)
 {
+    PBusPathElement_list_t pathEls = PBusPathElement_list_new ();
+    char *pathCopy = NULL, *pathToSplit = NULL, *seg;
+    char * saveptr = NULL;
+    nvlist_t * result;
+
+    if (path)
+    {
+        pathCopy = strdup (path);
+        pathToSplit = strdup (path);
+
+        seg = strtok_r (pathToSplit, "/", &saveptr);
+
+        while (seg)
+        {
+            PBusPathElement_list_add (&pathEls, seg);
+            seg = strtok_r (NULL, "/", &saveptr);
+        }
+    }
+
     if (!path)
-        return dispatchMessage (srv->rootObject, NULL, NULL, selector, params);
+        result = dispatchMessage (
+            srv->aRootObject, NULL, NULL, NULL, selector, params);
     else
-        return findReceiver (
-            srv->rootObject, NULL, NULL, path, selector, params);
+        result = findReceiver (
+            srv->aRootObject, NULL, path, NULL, &pathEls, selector, params);
+
+    if (path)
+    {
+        free (pathCopy);
+        free (pathToSplit);
+        PBusPathElement_list_destroy (&pathEls);
+    }
+
+    return result;
 }
+
+PBusClass testCls = {
+
+};
 
 void testIt ()
 {
     PBusServer * srv = calloc (1, sizeof (*srv));
-    PBusPathElement_list_t path = PBusPathElement_list_new ();
     PBusObject *a, *b, *c;
 
 #define makeObj(name)                                                          \
     name = calloc (1, sizeof (*name));                                         \
-    name->aName = #name
+    name->aName = #name;                                                       \
+    name->aIsA = &testCls
 
     makeObj (a);
     makeObj (b);
     makeObj (c);
 
-    PBusPathElement_list_add (&path, "a");
-    PBusPathElement_list_add (&path, "b");
+    srv->aRootObject = calloc (1, sizeof (PBusObject));
+    srv->aRootObject->aIsA = &testCls;
 
-    srv->rootObject = calloc (1, sizeof (PBusObject));
-
-#define addObjToObj(b, a) PBusObject_list_add (&a->subObjects, b)
-    addObjToObj (a, srv->rootObject);
+#define addObjToObj(b, a) PBusObject_list_add (&a->aSubObjects, b)
+    addObjToObj (a, srv->aRootObject);
     addObjToObj (b, a);
     addObjToObj (c, b);
 
-    findReceiver_root (srv, &path, "Hello", NULL);
+    findReceiver_root (srv, "", "Hello", NULL);
+
+#define destroyObj(a)                                                          \
+    PBusObject_list_destroy (&a->aSubObjects);                                 \
+    free (a)
+
+    free (srv->aRootObject);
+    free (srv);
+    free (a);
+    free (b);
+    free (c);
 }

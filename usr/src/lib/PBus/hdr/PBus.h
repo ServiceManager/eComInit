@@ -35,33 +35,41 @@ extern "C"
 #endif
 
     typedef struct PBusObject PBusObject;
+    typedef struct PBusClass PBusClass;
     typedef struct PBusInvocationContext PBusInvocationContext;
 
     S16List (PBusObject, PBusObject *);
     S16List (PBusPathElement, char *);
 
     typedef PBusObject * (*ResolveSubObjectFun) (
-        PBusObject * self, void ** user, const char * selfPath,
-        PBusPathElement_list_t * remainingPath, const char * selector);
+        PBusObject * self, void ** user, const char * fullPath,
+        const char * selfPath, PBusPathElement_list_t * remainingPath,
+        const char * selector);
     typedef nvlist_t * (*DispatchMessageFun) (PBusObject * self,
                                               PBusInvocationContext * ctx,
                                               nvlist_t * params);
 
-    struct PBusObject
+    struct PBusClass
     {
-        /* If root object, then this is NULL. */
-        char * aName;
-        void * aData;
-
-        PBusObject_list_t subObjects;
-
         ResolveSubObjectFun fnResolveSubObject;
         DispatchMessageFun fnDispatchMessage;
+
+        s16r_message_signature aMsgSigs[]; /* terminated .name = NULL */
+    };
+
+    struct PBusObject
+    {
+        PBusClass * aIsA;
+        char * aName; /* NULL if root object */
+        void * aData;
+
+        PBusObject_list_t aSubObjects;
     };
 
     typedef struct PBusServer
     {
-        PBusObject * rootObject;
+        s16r_srv_t * aS16RServer;
+        PBusObject * aRootObject;
     } PBusServer;
 
     typedef struct PBusInvocationContext
@@ -71,7 +79,29 @@ extern "C"
         const char * selector;
     } PBusInvocationContext;
 
-    nvlist_t * PBusGetExtraData (nvlist_t ** extraData);
+    /*
+     * Creates a new PBusServer with @rootObject as its root object.
+     */
+    PBusObject * PBusServerNew (PBusObject * rootObject);
+
+    /*
+     * Creates a new PBusObject of class @isa, name @name, and with user data
+     * @data, which is included in every message invocation on that object.
+     */
+    PBusObject * PBusObjectNew (PBusClass * isa, char * name, void * data);
+    /*
+     * Destroys a PBusObject. Does not destroy any subobjects it may have.
+     */
+    void PBusObjectDestroy (PBusObject * obj);
+    /*
+     * Destroys a PBusObject and all its subobjects recursively.
+     * But be aware that programmatic subobjects are not discovered.
+     */
+    void PBusObjectDeepDestroy (PBusObject * obj);
+    /*
+     * Adds a PBusObject @obj as a subobject of @parent
+     */
+    void PBusObjectAddSubObject (PBusObject * obj, PBusObject * subObj);
 
     void testIt ();
 

@@ -93,7 +93,7 @@ int main ()
     bool run = true;
 
     /* make sure repo socket deleted after exit */
-    atexit (clean_exit);
+    /*atexit (clean_exit);
     s16_log_init ("P-Bus Broker");
 
     if ((pbCtx.aKQ = kqueue ()) == -1)
@@ -128,55 +128,55 @@ int main ()
     {
         perror ("KQueue: Failed to set read event\n");
         exit (EXIT_FAILURE);
-    }
+    }*/
 
     testIt ();
 
-    sd_notify (0, "READY=1\nSTATUS=P-Bus Broker now accepting connections");
+    /* sd_notify (0, "READY=1\nSTATUS=P-Bus Broker now accepting connections");
 
-    while (run)
-    {
-        memset (&ev, 0x00, sizeof (struct kevent));
-        kevent (pbCtx.aKQ, NULL, 0, &ev, 1, NULL);
+     while (run)
+     {
+         memset (&ev, 0x00, sizeof (struct kevent));
+         kevent (pbCtx.aKQ, NULL, 0, &ev, 1, NULL);
 
-        switch (ev.filter)
-        {
-        case EVFILT_READ:
-        {
-            int fd = ev.ident;
+         switch (ev.filter)
+         {
+         case EVFILT_READ:
+         {
+             int fd = ev.ident;
 
-            if ((ev.flags & EV_EOF) && !(fd == pbCtx.aListenSocket))
-            {
-                perror ("Socket shut\n");
-                PBusClient_disconnect (PBusContext_findClient (fd));
-            }
-            else if (ev.ident == pbCtx.aListenSocket)
-            {
-                printf ("Accept\n");
-                fd = accept (fd, NULL, NULL);
-                if (fd == -1)
-                    perror ("accept");
+             if ((ev.flags & EV_EOF) && !(fd == pbCtx.aListenSocket))
+             {
+                 perror ("Socket shut\n");
+                 PBusClient_disconnect (PBusContext_findClient (fd));
+             }
+             else if (ev.ident == pbCtx.aListenSocket)
+             {
+                 printf ("Accept\n");
+                 fd = accept (fd, NULL, NULL);
+                 if (fd == -1)
+                     perror ("accept");
 
-                PBusClient_new (fd);
-            }
-            else
-            {
-                printf ("Recv\n");
-                PBusClient_recv (PBusContext_findClient (fd));
-            }
+                 PBusClient_new (fd);
+             }
+             else
+             {
+                 printf ("Recv\n");
+                 PBusClient_recv (PBusContext_findClient (fd));
+             }
 
-            break;
-        }
-        case EVFILT_SIGNAL:
-            fprintf (
-                stderr,
-                "PBus-Broker: Signal received: %lu. Additional data: %ld\n",
-                ev.ident, ev.data);
-            if (ev.ident == SIGINT)
-                run = false;
-            break;
-        }
-    }
+             break;
+         }
+         case EVFILT_SIGNAL:
+             fprintf (
+                 stderr,
+                 "PBus-Broker: Signal received: %lu. Additional data: %ld\n",
+                 ev.ident, ev.data);
+             if (ev.ident == SIGINT)
+                 run = false;
+             break;
+         }
+     }*/
 
     return 1;
 }
