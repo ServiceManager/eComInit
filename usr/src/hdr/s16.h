@@ -277,6 +277,11 @@ extern "C"
     /* Misc functionality */
     /* Set FD_CLOEXEC on some FD, preserving old flags. */
     void s16_cloexec (int fd);
+    /*
+     * Handle a signal with a Kernel Queue. You must check for EVFILT_SIGNAL in
+     * your event loop.
+     */
+    void s16_handle_signal (int kq, int sig);
 
 #ifdef __cplusplus
 }

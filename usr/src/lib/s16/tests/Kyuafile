@@ -2,4 +2,5 @@ syntax(2)
 
 test_suite('System XVI')
 
-atf_test_program{name='s16db_test'}
+atf_test_program{name='db'}
+atf_test_program{name='newrpc'}

@@ -43,58 +43,6 @@ S16List (void, void *);
 const char * s16r_kind_str[S16R_KMAX] = {"String", "Boolean", "Int",
                                          "Struct", "List",    "Right"};
 
-typedef struct
-{
-    int a;
-    const char * b;
-    int c;
-    bool d;
-} testStruct1;
-
-S16List (test1, testStruct1 *);
-
-typedef struct
-{
-    testStruct1 * a;
-    const char * b;
-    test1_list_t c;
-} testStruct2;
-
-s16r_struct_description testDesc1 = {
-    .len = sizeof (testStruct1),
-    .fields = {{.name = "tD1A",
-                .type = {.kind = S16R_KINT},
-                .off = offsetof (testStruct1, a)},
-               {.name = "tD1B",
-                .type = {.kind = S16R_KSTRING},
-                .off = offsetof (testStruct1, b)},
-               {.name = "tD1C",
-                .type = {.kind = S16R_KDESCRIPTOR},
-                .off = offsetof (testStruct1, c)},
-               {.name = "tD1D",
-                .type = {.kind = S16R_KBOOL},
-                .off = offsetof (testStruct1, d)},
-               {.name = NULL}}};
-
-s16r_type testType1 = {.kind = S16R_KSTRUCT, .sdesc = &testDesc1};
-
-s16r_struct_description testDesc2 = {
-    .len = sizeof (testStruct2),
-    .fields = {{.name = "tD2A",
-                .type = {.kind = S16R_KSTRUCT, .sdesc = &testDesc1},
-                .off = offsetof (testStruct2, a)},
-               {.name = "tD2B",
-                .type = {.kind = S16R_KSTRING},
-                .off = offsetof (testStruct2, b)},
-               {.name = "tD2C",
-                .type =
-                    {
-                        .kind = S16R_KLIST,
-                        .ltype = &testType1,
-                    },
-                .off = offsetof (testStruct2, c)},
-               {.name = NULL}}};
-
 void serialise (nvlist_t * nvl, const char * name, void ** src,
                 s16r_type * field);
 
@@ -141,11 +89,11 @@ void serialise (nvlist_t * nvl, const char * name, void ** src,
         break;
 
     case S16R_KBOOL:
-        nvlist_add_bool (nvl, name, *(bool *)src);
+        nvlist_add_bool (nvl, name, *(boolptr_t *)src);
         break;
 
     case S16R_KINT:
-        nvlist_add_number (nvl, name, *(int *)src);
+        nvlist_add_number (nvl, name, *(intptr_t *)src);
         break;
 
     case S16R_KSTRUCT:
@@ -157,7 +105,7 @@ void serialise (nvlist_t * nvl, const char * name, void ** src,
         break;
 
     case S16R_KDESCRIPTOR:
-        nvlist_add_descriptor (nvl, name, *(int *)src);
+        nvlist_add_descriptor (nvl, name, *(fdptr_t *)src);
         break;
 
     default:
@@ -166,67 +114,96 @@ void serialise (nvlist_t * nvl, const char * name, void ** src,
 }
 
 /*
- * Deserialisation
+ * Deserialisation functions. They return zero if they succed.
  */
 
-void deserialiseList (nvlist_t * nvl, s16r_type * type, void ** dest);
-void deserialiseStruct (nvlist_t * nvl, s16r_struct_description * desc,
-                        void ** dest);
+/* FIXME: Memory can leak if deserialisation fails halfway through! Leak of
+FDs is also possible. We should consider implementing in LibS16 some kind of
+resource pools feature, where we can release the lot if something goes
+wrong. */
 
-void deserialiseMember (nvlist_t * nvl, const char * name, s16r_type * type,
-                        void ** dest)
+int deserialiseList (nvlist_t * nvl, s16r_type * type, void ** dest);
+int deserialiseStruct (nvlist_t * nvl, s16r_struct_description * desc,
+                       void ** dest);
+
+int deserialiseMember (nvlist_t * nvl, const char * name, s16r_type * type,
+                       void ** dest)
 {
+    int err = -1;
+
     switch (type->kind)
     {
     case S16R_KSTRING:
+        if (!nvlist_exists_string (nvl, name))
+            goto err;
         *(char **)dest = nvlist_take_string (nvl, name);
         break;
 
     case S16R_KBOOL:
-        *(bool *)dest = nvlist_get_bool (nvl, name);
+        if (!nvlist_exists_bool (nvl, name))
+            goto err;
+        *(boolptr_t *)dest = nvlist_get_bool (nvl, name);
         break;
 
     case S16R_KINT:
-        *(int *)dest = nvlist_get_number (nvl, name);
+        if (!nvlist_exists_number (nvl, name))
+            goto err;
+        *(intptr_t *)dest = nvlist_get_number (nvl, name);
         break;
 
     case S16R_KSTRUCT:
         /* 'Take' cannot be used here. */
-        deserialiseStruct ((nvlist_t *)nvlist_get_nvlist (nvl, name),
-                           type->sdesc, dest);
+        err = deserialiseStruct ((nvlist_t *)nvlist_get_nvlist (nvl, name),
+                                 type->sdesc, dest);
+        if (err)
+            goto err;
         break;
 
     case S16R_KLIST:
-        deserialiseList ((nvlist_t *)nvlist_get_nvlist (nvl, name), type->ltype,
-                         dest);
+        err = deserialiseList ((nvlist_t *)nvlist_get_nvlist (nvl, name),
+                               type->ltype, dest);
+        if (err)
+            goto err;
         break;
 
     case S16R_KDESCRIPTOR:
-        *(int *)dest = nvlist_take_descriptor (nvl, name);
+        if (!nvlist_exists_descriptor (nvl, name))
+            goto err;
+        *(fdptr_t *)dest = nvlist_take_descriptor (nvl, name);
         break;
 
     default:
         assert (!"Should not be reached.");
     }
+
+    err = 0;
+
+err:
+    return err;
 }
 
-void deserialiseStruct (nvlist_t * nvl, s16r_struct_description * desc,
-                        void ** dest)
+int deserialiseStruct (nvlist_t * nvl, s16r_struct_description * desc,
+                       void ** dest)
 {
     s16r_field_description * field;
     void * struc = malloc (desc->len);
 
     for (int i = 0; (field = &desc->fields[i]) && field->name; i++)
     {
+        int err;
         void * member = ((char *)struc + field->off);
 
-        deserialiseMember (nvl, field->name, &field->type, member);
+        if (!nvlist_exists (nvl, field->name))
+            return -1;
+        if ((err = deserialiseMember (nvl, field->name, &field->type, member)))
+            return err;
     }
 
     *dest = struc;
+    return 0;
 }
 
-void deserialiseList (nvlist_t * nvl, s16r_type * type, void ** dest)
+int deserialiseList (nvlist_t * nvl, s16r_type * type, void ** dest)
 {
     const char * name;
     void * cookie = NULL;
@@ -238,9 +215,30 @@ void deserialiseList (nvlist_t * nvl, s16r_type * type, void ** dest)
     while ((name = nvlist_next (nvl, &nvtype, &cookie)))
     {
         void * dat;
-        deserialiseMember (nvl, name, type, &dat);
+        int err = deserialiseMember (nvl, name, type, &dat);
+        if (err)
+            return err;
         void_list_add (list, dat);
     }
+
+    return 0;
+}
+
+int deserialiseMsgArgs (nvlist_t * nvl, s16r_message_signature * desc,
+                        void ** dest)
+{
+    s16r_message_arg_signature * field;
+    void ** struc = malloc (sizeof (void *) * desc->nargs);
+
+    for (int i = 0; (field = &desc->args[i]) && field->name; i++)
+    {
+        int err = deserialiseMember (nvl, field->name, &field->type, &struc[i]);
+        if (err)
+            return err;
+    }
+
+    *dest = struc;
+    return 0;
 }
 
 ucl_object_t * nvlist_to_ucl (const nvlist_t * nvl)
@@ -291,37 +289,4 @@ ucl_object_t * nvlist_to_ucl (const nvlist_t * nvl)
     }
 
     return obj;
-}
-
-int main ()
-{
-    testStruct1 test1 = {.a = 55, .b = "Hello", .c = 1, .d = false};
-    testStruct2 test2 = {.a = &test1, .b = "World"};
-    nvlist_t * nvl;
-    testStruct2 * test3;
-    char * str;
-    ucl_object_t * obj;
-
-    test1_list_lpush (&test2.c, &test1);
-
-    nvl = serialiseStruct (&test2, &testDesc2);
-    obj = nvlist_to_ucl (nvl);
-    str = (char *)ucl_object_emit (obj, UCL_EMIT_JSON);
-    printf ("First serialisation: %s\n", str);
-    ucl_object_unref (obj);
-    free (str);
-
-    deserialiseStruct (nvl, &testDesc2, (void **)&test3);
-    nvlist_destroy (nvl);
-
-    nvl = serialiseStruct (test3, &testDesc2);
-    obj = nvlist_to_ucl (nvl);
-    str = (char *)ucl_object_emit (obj, UCL_EMIT_JSON);
-    printf ("Second serialisation: %s\n", str);
-    ucl_object_unref (obj);
-    free (str);
-
-    nvlist_destroy (nvl);
-
-    return 0;
 }

@@ -139,28 +139,6 @@ Unit * manager_find_unit_for_pid (pid_t pid)
     return NULL;
 }
 
-/* TODO: Move to libs16 */
-void handle_signal (int sig)
-{
-    struct kevent sigev;
-
-#ifdef S16_PLAT_BSD
-    /* On BSD, setting a signal event filter on a Kernel Queue does NOT
-     * supersede ordinary signal disposition; with libkqueue on Linux at least,
-     * however, it does. Therefore we ignore the signal; it'll be multiplexed
-     * into our event loop instead. */
-    signal (sig, SIG_IGN);
-#endif
-
-    EV_SET (&sigev, sig, EVFILT_SIGNAL, EV_ADD, 0, 0, 0);
-
-    if (kevent (manager.kq, &sigev, 1, 0, 0, 0) == -1)
-    {
-        perror ("KQueue: Failed to set signal event\n");
-        exit (EXIT_FAILURE);
-    }
-}
-
 /* Sets up a manifest-import service to read services into the repository. */
 void setup_manifest_import ()
 {
@@ -201,9 +179,9 @@ int main (int argc, char * argv[])
         manager.repo_up = false;
     }
 
-    handle_signal (SIGHUP);
-    handle_signal (SIGCHLD);
-    handle_signal (SIGINT);
+    s16_handle_signal (manager.kq, SIGHUP);
+    s16_handle_signal (manager.kq, SIGCHLD);
+    s16_handle_signal (manager.kq, SIGINT);
 
     if (!manager.repo_up)
     {

@@ -23,6 +23,9 @@
  * Use is subject to license terms.
  */
 
+#include <sys/event.h>
+#include <sys/signal.h>
+
 #include <assert.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -375,5 +378,26 @@ void s16_cloexec (int fd)
     else
     {
         perror ("Fcntl!");
+    }
+}
+
+void s16_handle_signal (int kq, int sig)
+{
+    struct kevent sigev;
+
+#ifdef S16_PLAT_BSD
+    /* On BSD, setting a signal event filter on a Kernel Queue does NOT
+     * supersede ordinary signal disposition; with libkqueue on Linux at least,
+     * however, it does. Therefore we ignore the signal; it'll be multiplexed
+     * into our event loop instead. */
+    signal (sig, SIG_IGN);
+#endif
+
+    EV_SET (&sigev, sig, EVFILT_SIGNAL, EV_ADD, 0, 0, 0);
+
+    if (kevent (kq, &sigev, 1, 0, 0, 0) == -1)
+    {
+        perror ("KQueue: Failed to set signal event\n");
+        exit (EXIT_FAILURE);
     }
 }

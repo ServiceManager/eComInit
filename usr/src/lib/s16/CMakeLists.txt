@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 2.8)
 project (s16)
 
 configure_file (${CMAKE_SOURCE_DIR}/hdr/s16compat-tpl.h ${PROJECT_BINARY_DIR}/s16compat.h)
@@ -15,6 +14,7 @@ endif()
 add_library (s16 SHARED 
   mem.c misc.c s16.c 
   rpc/rpc.c
+  newrpc/clnt.c newrpc/struct.c
   db/convert.c db/local.c db/rpc.c
   rr/process.c rr/process-tracker/pt-driver-${PT_DRIVER}.c)
 
@@ -46,16 +46,23 @@ install(TARGETS s16 DESTINATION ${CMAKE_INSTALL_LIBDIR}
         )
 
 
-add_executable (tester newrpc/struct.c)
-target_link_libraries (tester s16)
+#add_executable (tester newrpc/struct.c)
+#target_link_libraries (tester s16)
 #
 # Tests
 #
 if (S16_ENABLE_TESTS)
-  list(APPEND s16_test_list s16_test)
 
-  add_executable (s16_test tests/tests.c)
-  target_link_libraries (s16_test s16 Atf-C::Atf-C)
+  function(addTest name)
+    message("S16 Add test ${name}")
+    add_executable (${name} tests/${name}.c)
+    target_include_directories(${name} PRIVATE ${PROJECT_SOURCE_DIR})
+    target_link_libraries (${name} s16 Atf-C::Atf-C)
+    set(s16_test_list ${s16_test_list} ${name} PARENT_SCOPE)
+  endfunction()
+
+  addTest(newrpc)
+  addTest(db)
 
   addTests(${s16_test_list})
 endif()

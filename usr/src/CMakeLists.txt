@@ -91,7 +91,6 @@ endfunction(FIfUnset)
 
 FIfUnset(S16_ENABLE_JAVA TRUE)
 FIfUnset(S16_ENABLE_SD_NOTIFY TRUE)
-
 FIfUnset(S16_ENABLE_TESTS TRUE)
 
 if(S16_ENABLE_TESTS)
@@ -113,6 +112,7 @@ add_subdirectory(lib/uthash)
 
 add_subdirectory(etc)
 
+add_subdirectory(agent/PBusBroker)
 add_subdirectory(agent/restartd)
 add_subdirectory(agent/configd)
 add_subdirectory(agent/graphd)
@@ -124,6 +124,7 @@ add_subdirectory(cmd/svcs)
 
 add_subdirectory(lib/s16)
 add_subdirectory(lib/s16systemd)
+add_subdirectory(lib/PBus)
 
 #add_subdirectory(test/cxx-build)
 #add_custom_target(test DEPENDS test-cxx-build)
