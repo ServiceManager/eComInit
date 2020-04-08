@@ -5,6 +5,8 @@ target_include_directories(PBus_priv INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library (PBus SHARED PBus.c)
 target_link_libraries (PBus s16 s16systemd)
+target_include_directories(PBus PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/hdr)
+
 
 set(PBUS_HEADERS
     hdr/PBus.h

@@ -26,12 +26,31 @@
 #ifndef PBUSPRIV_H_
 #define PBUSPRIV_H_
 
+#include "s16newrpc.h"
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
 #define kPBusSocketPath "/var/run/PBus.sock"
+
+    /*
+     * NVList(SendResult) msgRecv(objectPath: String, selector: String,
+     *                            params: NVList)
+     * Or, in C form:
+     * nvlist_t * msgRecv(const char * objectPath, const char * selector,
+     *                    nvlist_t * params)
+     */
+    extern s16r_message_signature msgRecvSig;
+
+    /*Returns: struct { error: number, result: variable } SendResult;
+
+    To Bus: SendResult msgSend( endPoint: string, objectPath: list[string],
+    params: nvlist)
+
+    To endpoint:
+    SendResult msgSend(objectPath: string, params: nvlist) */
 
 #ifdef __cplusplus
 }

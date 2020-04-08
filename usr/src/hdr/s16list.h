@@ -27,6 +27,8 @@
  * Linked list
  */
 
+#include <stddef.h>
+
 #ifndef List_h_
 #define List_h_
 

@@ -44,6 +44,7 @@ extern "C"
         S16R_KSTRING,     /* A pointer to const char*/
         S16R_KBOOL,       /* A boolptr_t */
         S16R_KINT,        /* An intptr_t */
+        S16R_KNVLIST,     /* A pointer to an nvlist */
         S16R_KSTRUCT,     /* A pointer to a struct */
         S16R_KLIST,       /* An S16 list */
         S16R_KDESCRIPTOR, /* Unix rights - but cast into fdptr_t!! */

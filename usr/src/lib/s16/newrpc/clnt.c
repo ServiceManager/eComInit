@@ -211,19 +211,6 @@ typedef struct
     intptr_t b;
 } argStruct;
 
-/*s16r_struct_description testMethArgDesc = {
-    .len = sizeof (argStruct),
-    .fields = {{.name = "argA",
-                .type = {.kind = S16R_KSTRING},
-                .off = offsetof (argStruct, a)},
-               {.name = "argB",
-                .type = {.kind = S16R_KSTRING},
-                .off = offsetof (argStruct, b)},
-               {.name = NULL}}};
-
-s16r_message_signature testMethSig = {
-    .rtype = {.kind = S16R_KSTRING}, .nargs = 2, .args = &testMethArgDesc};*/
-
 s16r_message_signature testMethSig = {
     .rtype = {.kind = S16R_KSTRING},
     .nargs = 2,

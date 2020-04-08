@@ -4,6 +4,7 @@ AllowAllParametersOfDeclarationOnNextLine: true
 AllowShortBlocksOnASingleLine: true
 AllowShortFunctionsOnASingleLine: true
 BreakBeforeBraces: Allman
+BinPackArguments: false
 ColumnLimit: 80
 DerivePointerAlignment: false
 DerivePointerBinding: false

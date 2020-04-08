@@ -1,27 +1,30 @@
 find_package(PkgConfig QUIET)
 pkg_check_modules(Atf-C QUIET IMPORTED_TARGET atf-c)
 
-if(NOT Atf-C_FOUND)
-	find_path(Atf-C_INCLUDE_DIR atf-c.h
-		PATHS
-		"/usr/include"
-		"/usr/local/include"
-		PATH_SUFFIXES "atf-c"
-		)
+find_path(Atf-C_INCLUDE_DIR atf-c.h
+	PATHS
+	  "/usr/include"
+	  "/usr/local/include"
+	  ${Atf-C_INCLUDEDIR}
+	  PATH_SUFFIXES "atf-c"
+	)
 
-	find_library(Atf-C_LIBRARY
-		NAMES libatf-c.so
-		PATHS /usr/lib /usr/local/lib
-		)
+find_library(Atf-C_LIBRARY
+	NAMES libatf-c.so
+	PATHS
+	  /usr/lib
+	  /usr/local/lib
+	  ${Atf-C_LIBDIR}
+	)
 
-	if (Atf-C_INCLUDE_DIR AND Atf-C_LIBRARY)
-		set(Atf-C_FOUND TRUE)
-		set(Atf-C_LIBRARIES ${Atf-C_LIBRARY})
-		set(Atf-C_INCLUDE_DIRS ${Atf-C_INCLUDE_DIR})
-	else (Atf-C_INCLUDE_DIR AND Atf-C_LIBRARY)
-		set(Atf-C_FOUND FALSE)
-	endif (Atf-C_INCLUDE_DIR AND Atf-C_LIBRARY)
-endif()
+if (Atf-C_INCLUDE_DIR AND Atf-C_LIBRARY)
+	set(Atf-C_FOUND TRUE)
+	set(Atf-C_LIBRARIES ${Atf-C_LIBRARY})
+	set(Atf-C_INCLUDE_DIRS ${Atf-C_INCLUDE_DIR})
+else (Atf-C_INCLUDE_DIR AND Atf-C_LIBRARY)
+	set(Atf-C_FOUND FALSE)
+endif (Atf-C_INCLUDE_DIR AND Atf-C_LIBRARY)
+
 
 find_package_handle_standard_args(Atf-C DEFAULT_MSG
 	Atf-C_LIBRARIES

@@ -75,7 +75,10 @@ void PBusClient_disconnect (PBusClient * pbc)
     free (pbc);
 }
 
-void PBusClient_recv (int fd) { nvlist_t * nvl = nvlist_recv (fd, 0); }
+void PBusClient_recv (PBusClient * pbc)
+{
+    // nvlist_t * nvl = nvlist_recv (pbc->aFD, 0);
+}
 
 PBusClient * PBusContext_findClient (int fd)
 {
@@ -127,9 +130,9 @@ int main ()
         exit (EXIT_FAILURE);
     }
 
-    sd_notify (0, "READY=1\nSTATUS=P-Bus Broker now accepting connections");
-
     testIt ();
+
+    sd_notify (0, "READY=1\nSTATUS=P-Bus Broker now accepting connections");
 
     while (run)
     {

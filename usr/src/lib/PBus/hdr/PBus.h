@@ -23,13 +23,57 @@
  * Use is subject to license terms.
  */
 
-#ifndef PBUSBROKER_H_
-#define PBUSBROKER_H_
+#ifndef PBUS_H_
+#define PBUS_H_
+
+#include "s16list.h"
+#include "s16newrpc.h"
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
+
+    typedef struct PBusObject PBusObject;
+    typedef struct PBusInvocationContext PBusInvocationContext;
+
+    S16List (PBusObject, PBusObject *);
+    S16List (PBusPathElement, char *);
+
+    typedef PBusObject * (*ResolveSubObjectFun) (
+        PBusObject * self, void ** user, const char * selfPath,
+        PBusPathElement_list_t * remainingPath, const char * selector);
+    typedef nvlist_t * (*DispatchMessageFun) (PBusObject * self,
+                                              PBusInvocationContext * ctx,
+                                              nvlist_t * params);
+
+    struct PBusObject
+    {
+        /* If root object, then this is NULL. */
+        char * aName;
+        void * aData;
+
+        PBusObject_list_t subObjects;
+
+        ResolveSubObjectFun fnResolveSubObject;
+        DispatchMessageFun fnDispatchMessage;
+    };
+
+    typedef struct PBusServer
+    {
+        PBusObject * rootObject;
+    } PBusServer;
+
+    typedef struct PBusInvocationContext
+    {
+        const char * selfPath;
+        void * user;
+        const char * selector;
+    } PBusInvocationContext;
+
+    nvlist_t * PBusGetExtraData (nvlist_t ** extraData);
+
+    void testIt ();
 
 #ifdef __cplusplus
 }

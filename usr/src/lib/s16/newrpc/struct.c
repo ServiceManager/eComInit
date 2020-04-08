@@ -96,6 +96,10 @@ void serialise (nvlist_t * nvl, const char * name, void ** src,
         nvlist_add_number (nvl, name, *(intptr_t *)src);
         break;
 
+    case S16R_KNVLIST:
+        nvlist_add_nvlist (nvl, name, *(nvlist_t **)src);
+        break;
+
     case S16R_KSTRUCT:
         nvlist_move_nvlist (nvl, name, serialiseStruct (*src, type->sdesc));
         break;
@@ -150,6 +154,11 @@ int deserialiseMember (nvlist_t * nvl, const char * name, s16r_type * type,
             goto err;
         *(intptr_t *)dest = nvlist_get_number (nvl, name);
         break;
+
+    case S16R_KNVLIST:
+        if (!nvlist_exists_nvlist (nvl, name))
+            goto err;
+        *(nvlist_t **)dest = nvlist_get_nvlist (nvl, name);
 
     case S16R_KSTRUCT:
         /* 'Take' cannot be used here. */
