@@ -130,8 +130,6 @@ int main ()
         exit (EXIT_FAILURE);
     }*/
 
-    testIt ();
-
     /* sd_notify (0, "READY=1\nSTATUS=P-Bus Broker now accepting connections");
 
      while (run)

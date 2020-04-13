@@ -40,8 +40,8 @@
 
 S16List (void, void *);
 
-const char * s16r_kind_str[S16R_KMAX] = {"String", "Boolean", "Int",
-                                         "Struct", "List",    "Right"};
+const char * s16r_kind_str[S16R_KMAX] = {
+    "String", "Boolean", "Int", "Struct", "List", "Right"};
 
 void serialise (nvlist_t * nvl, const char * name, void ** src,
                 s16r_type * field);
@@ -158,19 +158,19 @@ int deserialiseMember (nvlist_t * nvl, const char * name, s16r_type * type,
     case S16R_KNVLIST:
         if (!nvlist_exists_nvlist (nvl, name))
             goto err;
-        *(nvlist_t **)dest = nvlist_get_nvlist (nvl, name);
+        *(nvlist_t **)dest = nvlist_take_nvlist (nvl, name);
 
     case S16R_KSTRUCT:
         /* 'Take' cannot be used here. */
-        err = deserialiseStruct ((nvlist_t *)nvlist_get_nvlist (nvl, name),
-                                 type->sdesc, dest);
+        err = deserialiseStruct (
+            (nvlist_t *)nvlist_get_nvlist (nvl, name), type->sdesc, dest);
         if (err)
             goto err;
         break;
 
     case S16R_KLIST:
-        err = deserialiseList ((nvlist_t *)nvlist_get_nvlist (nvl, name),
-                               type->ltype, dest);
+        err = deserialiseList (
+            (nvlist_t *)nvlist_get_nvlist (nvl, name), type->ltype, dest);
         if (err)
             goto err;
         break;
@@ -250,6 +250,66 @@ int deserialiseMsgArgs (nvlist_t * nvl, s16r_message_signature * desc,
     return 0;
 }
 
+void destroy (void ** src, s16r_type * field);
+
+void destroyStruct (void * src, s16r_struct_description * desc)
+{
+    s16r_field_description * field;
+
+    for (int i = 0; (field = &desc->fields[i]) && field->name; i++)
+    {
+        void * member = ((char *)src + field->off);
+        destroy (member, &field->type);
+    }
+}
+
+void destroyList (void * src, s16r_type * type)
+{
+    LL_each ((void_list_t *)src, el) { destroy (&el->val, type); }
+    void_list_destroy ((void_list_t *)src);
+}
+
+void destroyMsgArgs (void ** src, s16r_message_signature * desc)
+{
+    s16r_message_arg_signature * field;
+
+    for (int i = 0; (field = &desc->args[i]) && field->name; i++)
+    {
+        destroy (&src[i], &field->type);
+    }
+
+    free (src);
+}
+
+void destroy (void ** src, s16r_type * type)
+{
+    switch (type->kind)
+    {
+    case S16R_KSTRING:
+        free (*(char **)src);
+        break;
+    case S16R_KNVLIST:
+        nvlist_destroy (*(nvlist_t **)src);
+        break;
+    case S16R_KSTRUCT:
+        destroyStruct (*src, type->sdesc);
+        break;
+    case S16R_KLIST:
+        destroyList (src, type->ltype);
+        break;
+    case S16R_KDESCRIPTOR:
+        close (*(fdptr_t *)src);
+        break;
+
+    case S16R_KINT:
+    case S16R_KBOOL:
+        break;
+
+    default:
+        assert (!"Should not be reached.");
+    }
+}
+
 ucl_object_t * nvlist_to_ucl (const nvlist_t * nvl)
 {
     ucl_object_t * obj = ucl_object_typed_new (UCL_OBJECT);
@@ -263,32 +323,47 @@ ucl_object_t * nvlist_to_ucl (const nvlist_t * nvl)
         {
         case NV_TYPE_STRING:
             ucl_object_insert_key (
-                obj, ucl_object_fromstring (nvlist_get_string (nvl, name)),
-                name, 0, false);
+                obj,
+                ucl_object_fromstring (nvlist_get_string (nvl, name)),
+                name,
+                0,
+                false);
             break;
 
         case NV_TYPE_BOOL:
             ucl_object_insert_key (
-                obj, ucl_object_frombool (nvlist_get_bool (nvl, name)), name, 0,
+                obj,
+                ucl_object_frombool (nvlist_get_bool (nvl, name)),
+                name,
+                0,
                 false);
             break;
 
         case NV_TYPE_NUMBER:
             ucl_object_insert_key (
-                obj, ucl_object_fromint (nvlist_get_number (nvl, name)), name,
-                0, false);
+                obj,
+                ucl_object_fromint (nvlist_get_number (nvl, name)),
+                name,
+                0,
+                false);
             break;
 
         case NV_TYPE_NVLIST:
             ucl_object_insert_key (
-                obj, nvlist_to_ucl (nvlist_get_nvlist (nvl, name)), name, 0,
+                obj,
+                nvlist_to_ucl (nvlist_get_nvlist (nvl, name)),
+                name,
+                0,
                 false);
             break;
 
         case NV_TYPE_DESCRIPTOR:
             ucl_object_insert_key (
-                obj, ucl_object_fromint (nvlist_get_descriptor (nvl, name)),
-                name, 0, false);
+                obj,
+                ucl_object_fromint (nvlist_get_descriptor (nvl, name)),
+                name,
+                0,
+                false);
             break;
 
         default:

@@ -49,12 +49,35 @@ extern "C"
                                               PBusInvocationContext * ctx,
                                               nvlist_t * params);
 
+    /*
+     * A P-Bus handler function. Its arguments have all been automatically
+     * deserialised, and its return type will be automatically serialised. But
+     * it is the responsibility of the handler to duplicate any resources it
+     * retains.
+     */
+    typedef void * (*PBusFun) (PBusObject * self, PBusInvocationContext * ctx,
+                               ...);
+
+    /*
+     * A raw P-Bus handler function. It should return an NVList containing a key
+     * "result" with the value being the result.
+     */
+    typedef nvlist_t * (*PBusRawFun) (PBusObject * self,
+                                      PBusInvocationContext * ctx,
+                                      nvlist_t * params);
+
+    typedef struct PBusMethod
+    {
+        s16r_message_signature * sig;
+        PBusFun fun;
+    } PBusMethod;
+
     struct PBusClass
     {
         ResolveSubObjectFun fnResolveSubObject;
         DispatchMessageFun fnDispatchMessage;
 
-        s16r_message_signature aMsgSigs[]; /* terminated .name = NULL */
+        PBusMethod * (*aMethods)[]; /* terminated .name = NULL */
     };
 
     struct PBusObject
@@ -74,9 +97,10 @@ extern "C"
 
     typedef struct PBusInvocationContext
     {
-        const char * selfPath;
-        void * user;
-        const char * selector;
+        const char * fromBusname; /* NULL if direct */
+        const char * selfPath;    /* Object path of self */
+        void * user; /* User data (FIXME: set by custom resolveFun?) */
+        const char * selector; /* Message selector */
     } PBusInvocationContext;
 
     /*

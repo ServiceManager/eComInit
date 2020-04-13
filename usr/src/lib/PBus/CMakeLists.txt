@@ -19,3 +19,9 @@ set_target_properties(PBus PROPERTIES
 install(TARGETS PBus DESTINATION ${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION include
         )
+
+if (S16_ENABLE_TESTS)
+  addTest(pbus PBus)
+
+  addTests(${s16_test_list})
+endif()

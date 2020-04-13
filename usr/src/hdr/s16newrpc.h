@@ -64,17 +64,15 @@ extern "C"
 
     typedef struct
     {
-        const char * name;
-        s16r_type type;
-        /* Offset of this field into the corresponding struct. */
-        size_t off;
+        const char * name; /* Field name */
+        s16r_type type;    /* Type descriptor */
+        size_t off;        /* Offset of field into corresponding struct */
     } s16r_field_description;
 
     typedef struct s16r_struct_description
     {
-        /* Total size of this struct. */
-        size_t len;
-        s16r_field_description fields[];
+        size_t len;                      /* Total size of struct */
+        s16r_field_description fields[]; /* Field descriptions */
     } s16r_struct_description;
 
     typedef struct s16r_message_arg_signature
@@ -85,12 +83,11 @@ extern "C"
 
     typedef struct s16r_message_signature
     {
-        const char * name;
-        /* Return type of the message. */
-        s16r_type rtype;
-        /* Arguments */
-        size_t nargs;
-        s16r_message_arg_signature args[];
+        const char * name; /* Message selector */
+        bool raw;        /* Arguments and return value passed as plain nvlist */
+        s16r_type rtype; /* Return type of message */
+        size_t nargs;    /* Number of arguments */
+        s16r_message_arg_signature args[]; /* Argument signatures */
     } s16r_message_signature;
 
     /* S16 RPC Error code */
@@ -112,10 +109,10 @@ extern "C"
 
     typedef struct
     {
-        s16r_errcode_t code;
-        char * message;
-        size_t data_len;
-        void * data;
+        s16r_errcode_t code; /* Error code */
+        char * message;      /* Error message */
+        size_t data_len;     /* Length of any auxiliary data */
+        void * data;         /* Pointer to auxiliary data */
     } s16r_error_t;
 
     typedef struct s16r_data_s
@@ -132,6 +129,7 @@ extern "C"
 
     void serialise (nvlist_t * nvl, const char * name, void ** src,
                     s16r_type * type);
+    nvlist_t * serialiseStruct (void * src, s16r_struct_description * desc);
 
     /*
      * Deserialisation routines. They return 0 if they succeed.
@@ -140,6 +138,11 @@ extern "C"
                            void ** dest);
     int deserialiseMsgArgs (nvlist_t * nvl, s16r_message_signature * desc,
                             void ** dest);
+
+    /*
+     * Destruction routines. Programmatically destroy based on descriptions.
+     */
+    void destroyMsgArgs (void ** src, s16r_message_signature * desc);
 
     ucl_object_t * nvlist_to_ucl (const nvlist_t * nvl);
 

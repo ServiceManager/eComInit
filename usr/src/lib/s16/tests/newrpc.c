@@ -85,7 +85,8 @@ ATF_TC (deserialise_twice);
 ATF_TC_HEAD (deserialise_twice, tc)
 {
     atf_tc_set_md_var (
-        tc, "descr",
+        tc,
+        "descr",
         "Test conversion of a service structure to and from JSON form.");
 }
 ATF_TC_BODY (deserialise_twice, tc)

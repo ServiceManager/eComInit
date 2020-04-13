@@ -45,24 +45,9 @@ install(TARGETS s16 DESTINATION ${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION include
         )
 
-
-#add_executable (tester newrpc/struct.c)
-#target_link_libraries (tester s16)
-#
-# Tests
-#
 if (S16_ENABLE_TESTS)
-
-  function(addTest name)
-    message("S16 Add test ${name}")
-    add_executable (${name} tests/${name}.c)
-    target_include_directories(${name} PRIVATE ${PROJECT_SOURCE_DIR})
-    target_link_libraries (${name} s16 Atf-C::Atf-C)
-    set(s16_test_list ${s16_test_list} ${name} PARENT_SCOPE)
-  endfunction()
-
-  addTest(newrpc)
-  addTest(db)
+  addTest(newrpc s16)
+  addTest(db s16)
 
   addTests(${s16_test_list})
 endif()
