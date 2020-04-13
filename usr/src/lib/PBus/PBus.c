@@ -27,6 +27,20 @@
 
 #include "PBus.h"
 #include "PBus_priv.h"
+#include "s16newrpc.h"
+
+typedef void * (*PB0ParamFun) (PBusObject *, PBusInvocationContext *,
+                               const char *);
+typedef void * (*PB1ParamFun) (PBusObject *, PBusInvocationContext *,
+                               const char *, const void *);
+typedef void * (*PB2ParamFun) (PBusObject *, PBusInvocationContext *,
+                               const char *, const void *, const void *);
+typedef void * (*PB3ParamFun) (PBusObject *, PBusInvocationContext *,
+                               const char *, const void *, const void *,
+                               const void *);
+typedef void * (*PB4ParamFun) (PBusObject *, PBusInvocationContext *,
+                               const char *, const void *, const void *,
+                               const void *, const void *);
 
 s16r_message_signature msgRecvSig = {
     .rtype = {.kind = S16R_KNVLIST},
@@ -41,6 +55,61 @@ static bool matchObject (PBusObject * o, const char * n)
     return !strcmp (o->aName, n);
 }
 
+static void * dispatchFun (PBusObject * self, PBusInvocationContext * ctx,
+                           const char * selector, PBusMethod * meth,
+                           nvlist_t * nvparams)
+{
+    void ** params;
+
+    if (deserialiseMsgArgs (nvparams, meth->sig, (void **)&params))
+    {
+        printf ("Error deserialising message args!\n");
+        return NULL;
+    }
+
+#define Param(i) params[i]
+    switch (meth->sig->nargs)
+    {
+    case 0:
+        return ((PB0ParamFun)meth->fun) (self, ctx, selector);
+    case 1:
+        return ((PB1ParamFun)meth->fun) (self, ctx, selector, Param (0));
+    case 2:
+        return ((PB2ParamFun)meth->fun) (
+            self, ctx, selector, Param (0), Param (1));
+    case 3:
+        return ((PB3ParamFun)meth->fun) (
+            self, ctx, selector, Param (0), Param (1), Param (2));
+    case 4:
+        return ((PB4ParamFun)meth->fun) (
+            self, ctx, selector, Param (0), Param (1), Param (2), Param (3));
+    default:
+        printf ("Unsupported parameter count!\n");
+        return NULL;
+    }
+#undef Param
+}
+
+static nvlist_t * sendMessage (PBusObject * self, PBusInvocationContext * ctx,
+                               const char * selector, PBusMethod * meth,
+                               nvlist_t * params)
+{
+    nvlist_t * response = nvlist_create (0);
+
+    printf ("SendMessage");
+
+    /* check if notes in future */
+    if (!meth->sig->raw)
+    {
+        void * result = dispatchFun (self, ctx, selector, meth, params);
+
+        printf ("Dispatched fun\n");
+        serialise (response, "result", &result, &meth->sig->rtype);
+    }
+
+    return response;
+}
+
 static nvlist_t * dispatchMessage (PBusObject * self, void * user,
                                    const char * fullPath, const char * selfPath,
                                    const char * selector, nvlist_t * params)
@@ -52,7 +121,13 @@ static nvlist_t * dispatchMessage (PBusObject * self, void * user,
         return self->aIsA->fnDispatchMessage (self, &ctx, params);
     else
     {
-        return NULL;
+        PBusMethod * meth;
+        for (int i = 0; (meth = (*self->aIsA->aMethods)[i]); i++)
+        {
+            printf ("Candidate: %s. Tofind: %s\n", meth->sig->name, selector);
+            if (!strcmp (selector, meth->sig->name))
+                return sendMessage (self, &ctx, selector, meth, params);
+        }
     }
 }
 
@@ -104,8 +179,8 @@ static nvlist_t * findReceiver (PBusObject * self, void * extraData,
     }
 }
 
-static nvlist_t * findReceiver_root (PBusServer * srv, const char * path,
-                                     const char * selector, nvlist_t * params)
+nvlist_t * findReceiver_root (PBusServer * srv, const char * path,
+                              const char * selector, nvlist_t * params)
 {
     PBusPathElement_list_t pathEls = PBusPathElement_list_new ();
     char *pathCopy = NULL, *pathToSplit = NULL, *seg;
@@ -141,43 +216,4 @@ static nvlist_t * findReceiver_root (PBusServer * srv, const char * path,
     }
 
     return result;
-}
-
-PBusClass testCls = {
-
-};
-
-void testIt ()
-{
-    PBusServer * srv = calloc (1, sizeof (*srv));
-    PBusObject *a, *b, *c;
-
-#define makeObj(name)                                                          \
-    name = calloc (1, sizeof (*name));                                         \
-    name->aName = #name;                                                       \
-    name->aIsA = &testCls
-
-    makeObj (a);
-    makeObj (b);
-    makeObj (c);
-
-    srv->aRootObject = calloc (1, sizeof (PBusObject));
-    srv->aRootObject->aIsA = &testCls;
-
-#define addObjToObj(b, a) PBusObject_list_add (&a->aSubObjects, b)
-    addObjToObj (a, srv->aRootObject);
-    addObjToObj (b, a);
-    addObjToObj (c, b);
-
-    findReceiver_root (srv, "", "Hello", NULL);
-
-#define destroyObj(a)                                                          \
-    PBusObject_list_destroy (&a->aSubObjects);                                 \
-    free (a)
-
-    free (srv->aRootObject);
-    free (srv);
-    free (a);
-    free (b);
-    free (c);
 }
