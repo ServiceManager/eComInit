@@ -88,16 +88,17 @@ extern "C"
 
     S16ListType (depgroup, S16DependencyGroup *);
 
+    typedef enum
+    {
+        kS16PropertyTypeString,
+        kS16PropertyTypeNumber,
+        kS16PropertyTypeBoolean,
+    } S16PropertyType;
+
     typedef struct property_s
     {
         char * name;
-
-        enum
-        {
-            PROP_STRING,
-            PROP_NUMBER,
-            PROP_BOOLEAN,
-        } type;
+        S16PropertyType type;
 
         union {
             long i;
@@ -183,49 +184,49 @@ extern "C"
 
     /* Dependency-group functions */
     /* Destroys a depgroup. */
-    void s16_depgroup_destroy (S16DependencyGroup * depgroup);
+    void S16DependencyGroupDestroy (S16DependencyGroup * depgroup);
     /* Makes a deep copy of a depgroup. */
     S16DependencyGroup *
-    s16_depgroup_copy (const S16DependencyGroup * depgroup);
+    S16DependencyGroupCopy (const S16DependencyGroup * depgroup);
     /* Returns true if b's name matches that of a. */
-    bool s16_depgroup_name_equal (const S16DependencyGroup * a,
-                                  const S16DependencyGroup * b);
+    bool S16DependencyGroupNamesEqual (const S16DependencyGroup * a,
+                                       const S16DependencyGroup * b);
 
     /* Property functions */
     /* Destroys a property. */
-    void s16_prop_destroy (S16Property * prop);
+    void S16PropertyDestroy (S16Property * prop);
     /* Makes a deep copy of a property. */
-    S16Property * s16_prop_copy (const S16Property * prop);
+    S16Property * S16PropertyCopy (const S16Property * prop);
     /* Returns true if b's name matches that of a. */
-    bool s16_prop_name_equal (const S16Property * a, const S16Property * b);
+    bool S16PropertyNamesEqual (const S16Property * a, const S16Property * b);
 
     /* Method functions */
     /* Destroys a method. */
-    void s16_meth_destroy (S16ServiceMethod * meth);
+    void S16MethodDestroy (S16ServiceMethod * meth);
     /* Makes a deep copy of a method. */
-    S16ServiceMethod * s16_meth_copy (const S16ServiceMethod * meth);
+    S16ServiceMethod * S16MethodCopy (const S16ServiceMethod * meth);
     /* Returns true if b's name matches that of a. */
-    bool s16_meth_name_equal (const S16ServiceMethod * a,
+    bool S16MethodNamesEqual (const S16ServiceMethod * a,
                               const S16ServiceMethod * b);
 
     /* Instance functions */
     /* Destroys an instance. */
-    void s16_inst_destroy (S16ServiceInstance * inst);
+    void S16InstanceDestroy (S16ServiceInstance * inst);
     /* Makes a deep copy of a instance. */
-    S16ServiceInstance * s16_inst_copy (const S16ServiceInstance * inst);
+    S16ServiceInstance * S16InstanceCopy (const S16ServiceInstance * inst);
     /* Returns true if b's name matches that of a. */
-    bool s16_inst_name_equal (const S16ServiceInstance * a,
-                              const S16ServiceInstance * b);
+    bool S16InstanceNamesEqual (const S16ServiceInstance * a,
+                                const S16ServiceInstance * b);
 
     /* Service functions */
     /* Allocates and initialises fields of a new service.*/
-    S16Service * s16_svc_alloc ();
+    S16Service * S16ServiceAlloc ();
     /* Makes a deep copy of a service. */
-    S16Service * s16_svc_copy (const S16Service * svc);
+    S16Service * S16ServiceCopy (const S16Service * svc);
     /* Destroys a service. */
-    void s16_svc_destroy (S16Service * svc);
+    void S16ServiceDestroy (S16Service * svc);
     /* Returns true if b's name matches that of a. */
-    bool s16_svc_name_equal (const S16Service * a, const S16Service * b);
+    bool S16ServiceNamesEqual (const S16Service * a, const S16Service * b);
 
 #ifdef __cplusplus
 }

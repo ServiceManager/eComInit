@@ -324,7 +324,7 @@ S16Property * s16db_ucl_to_prop (const ucl_object_t * obj)
     assert (ucl_object_type (name) == UCL_STRING);
     assert (ucl_object_type (val) == UCL_STRING);
 
-    prop->type = PROP_STRING;
+    prop->type = kS16PropertyTypeString;
     prop->name = strdup (ucl_object_tostring (name));
     prop->value.s = strdup (ucl_object_tostring (val));
 

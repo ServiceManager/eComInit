@@ -171,7 +171,7 @@ int main (int argc, char * argv[])
 
     sd_notify_srv_setup (manager.kq);
 
-    manager.pt = pt_new (manager.kq);
+    manager.pt = S16ProcessTrackerNew (manager.kq);
     timerset_init (&manager.ts, manager.kq);
 
     if ((s16db_hdl_new (&manager.h)))
@@ -201,7 +201,7 @@ int main (int argc, char * argv[])
     while (run)
     {
         struct kevent ev;
-        pt_info_t * info;
+        S16ProcessTrackerEvent * info;
 
         memset (&ev, 0x00, sizeof (struct kevent));
 
@@ -213,7 +213,7 @@ int main (int argc, char * argv[])
 
         tmout.tv_sec = 3;
 
-        if ((info = pt_investigate_kevent (manager.pt, &ev)))
+        if ((info = S16ProcessTrackerInvestigateKEvent (manager.pt, &ev)))
         {
             Unit * unit = manager_find_unit_for_pid (info->pid);
 
@@ -250,7 +250,7 @@ int main (int argc, char * argv[])
         }
     }
 
-    pt_destroy (manager.pt);
+    S16ProcessTrackerDestroy (manager.pt);
     close (manager.kq);
 
     return 0;

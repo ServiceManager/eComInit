@@ -40,17 +40,17 @@ typedef struct process_tracker_s
 {
     int kq;
     pid_list_t pids;
-} process_tracker_t;
+} S16ProcessTracker;
 
-process_tracker_t * pt_new (int kq)
+S16ProcessTracker * S16ProcessTrackerNew (int kq)
 {
-    process_tracker_t * pt = s16mem_alloc (sizeof (process_tracker_t));
+    S16ProcessTracker * pt = s16mem_alloc (sizeof (S16ProcessTracker));
     pt->kq = kq;
     pt->pids = pid_list_new ();
     return pt;
 }
 
-int pt_watch_pid (process_tracker_t * pt, pid_t pid)
+int S16ProcessTrackerWatchPID (S16ProcessTracker * pt, pid_t pid)
 {
     int i;
     struct kevent ke;
@@ -69,7 +69,7 @@ int pt_watch_pid (process_tracker_t * pt, pid_t pid)
     return i == -1 ? 1 : 0;
 }
 
-void pt_disregard_pid (process_tracker_t * pt, pid_t pid)
+void S16ProcessTrackerDisregardPID (S16ProcessTracker * pt, pid_t pid)
 {
     struct kevent ke;
     pid_list_it it;
@@ -82,10 +82,11 @@ void pt_disregard_pid (process_tracker_t * pt, pid_t pid)
     return;
 }
 
-pt_info_t * pt_investigate_kevent (process_tracker_t * pt, struct kevent * ke)
+S16ProcessTrackerEvent *
+S16ProcessTrackerInvestigateKEvent (S16ProcessTracker * pt, struct kevent * ke)
 {
-    pt_info_t * result;
-    pt_info_t info;
+    S16ProcessTrackerEvent * result;
+    S16ProcessTrackerEvent info;
 
     if (ke->filter != EVFILT_PROC)
         return 0;
@@ -93,7 +94,7 @@ pt_info_t * pt_investigate_kevent (process_tracker_t * pt, struct kevent * ke)
     if (ke->fflags & NOTE_CHILD)
     {
         printf ("new pid %d has %d as parent\n", ke->ident, ke->data);
-        info.event = PT_CHILD;
+        info.event = kS16ProcessTrackerEventTypeChild;
         info.pid = ke->ident;
         info.ppid = ke->data;
 
@@ -102,7 +103,7 @@ pt_info_t * pt_investigate_kevent (process_tracker_t * pt, struct kevent * ke)
     else if (ke->fflags & NOTE_EXIT)
     {
         printf ("pid %d exited\n", ke->ident);
-        info.event = PT_EXIT;
+        info.event = kS16ProcessTrackerEventTypeExit;
         info.pid = ke->ident;
         info.ppid = 0;
         info.flags = ke->data;
@@ -112,15 +113,18 @@ pt_info_t * pt_investigate_kevent (process_tracker_t * pt, struct kevent * ke)
     else
         return 0;
 
-    result = s16mem_alloc (sizeof (pt_info_t));
+    result = s16mem_alloc (sizeof (S16ProcessTrackerEvent));
     *result = info;
 
     return result;
 }
 
-void pt_destroy (process_tracker_t * pt)
+void S16ProcessTrackerDestroy (S16ProcessTracker * pt)
 {
-    list_foreach (pid, &pt->pids, it) { pt_disregard_pid (pt, it->val); }
+    list_foreach (pid, &pt->pids, it)
+    {
+        S16ProcessTrackerDisregardPID (pt, it->val);
+    }
 
     pid_list_destroy (&pt->pids);
     s16mem_free (pt);

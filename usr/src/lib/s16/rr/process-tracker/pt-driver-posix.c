@@ -47,53 +47,57 @@ typedef struct process_tracker_s
 {
     int kq;
     pid_list_t pids;
-} process_tracker_t;
+} S16ProcessTracker;
 
-process_tracker_t * pt_new (int kq)
+S16ProcessTracker * S16ProcessTrackerNew (int kq)
 {
-    process_tracker_t * pt = s16mem_alloc (sizeof (process_tracker_t));
+    S16ProcessTracker * pt = s16mem_alloc (sizeof (S16ProcessTracker));
     pt->kq = kq;
     pt->pids = pid_list_new ();
     return pt;
 }
 
-int pt_watch_pid (process_tracker_t * pt, pid_t pid)
+int S16ProcessTrackerWatchPID (S16ProcessTracker * pt, pid_t pid)
 {
     pid_list_add (&pt->pids, pid);
     return 0;
 }
 
-void pt_disregard_pid (process_tracker_t * pt, pid_t pid) { return; }
-
-pt_info_t * pt_investigate_kevent (process_tracker_t * pt, struct kevent * ke)
+void S16ProcessTrackerDisregardPID (S16ProcessTracker * pt, pid_t pid)
 {
-    pt_info_t * result;
-    pt_info_t info;
+    return;
+}
+
+S16ProcessTrackerEvent *
+S16ProcessTrackerInvestigateKEvent (S16ProcessTracker * pt, struct kevent * ke)
+{
+    S16ProcessTrackerEvent * result;
+    S16ProcessTrackerEvent info;
 
     if (ke->filter != EVFILT_SIGNAL)
         return 0;
 
     if (ke->ident == SIGCHLD)
     {
-        info.event = PT_EXIT;
+        info.event = kS16ProcessTrackerEventTypeExit;
         info.pid = waitpid ((pid_t) (-1), (int *)&info.flags, WNOHANG);
         info.ppid = 0;
     }
     else
         return 0;
 
-    result = s16mem_alloc (sizeof (pt_info_t));
+    result = s16mem_alloc (sizeof (S16ProcessTrackerEvent));
     *result = info;
 
     return result;
 }
 
-void pt_destroy (process_tracker_t * pt)
+void S16ProcessTrackerDestroy (S16ProcessTracker * pt)
 {
     for (pid_list_it it = pid_list_begin (&pt->pids); it != NULL;
          it = pid_list_it_next (it))
     {
-        pt_disregard_pid (pt, it->val);
+        S16ProcessTrackerDisregardPID (pt, it->val);
     }
 
     pid_list_destroy (&pt->pids);

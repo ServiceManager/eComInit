@@ -63,12 +63,12 @@ int merge_depgroup_into_list (S16DependencyGroup * depgroup,
                               depgroup_list_t * list)
 {
     depgroup_list_it cand =
-        depgroup_list_find_cmp (list, s16_depgroup_name_equal, depgroup);
+        depgroup_list_find_cmp (list, S16DependencyGroupNamesEqual, depgroup);
 
     if (cand)
     {
-        s16_depgroup_destroy (cand->val);
-        cand->val = s16_depgroup_copy (depgroup);
+        S16DependencyGroupDestroy (cand->val);
+        cand->val = S16DependencyGroupCopy (depgroup);
     }
     else
         depgroup_list_add (list, depgroup);
@@ -78,12 +78,12 @@ int merge_depgroup_into_list (S16DependencyGroup * depgroup,
 
 int merge_prop_into_list (S16Property * prop, prop_list_t * list)
 {
-    prop_list_it cand = prop_list_find_cmp (list, s16_prop_name_equal, prop);
+    prop_list_it cand = prop_list_find_cmp (list, S16PropertyNamesEqual, prop);
 
     if (cand)
     {
-        s16_prop_destroy (cand->val);
-        cand->val = s16_prop_copy (prop);
+        S16PropertyDestroy (cand->val);
+        cand->val = S16PropertyCopy (prop);
     }
     else
         prop_list_add (list, prop);
@@ -93,12 +93,12 @@ int merge_prop_into_list (S16Property * prop, prop_list_t * list)
 
 int merge_meth_into_list (S16ServiceMethod * meth, meth_list_t * list)
 {
-    meth_list_it cand = meth_list_find_cmp (list, s16_meth_name_equal, meth);
+    meth_list_it cand = meth_list_find_cmp (list, S16MethodNamesEqual, meth);
 
     if (cand)
     {
-        s16_meth_destroy (cand->val);
-        cand->val = s16_meth_copy (meth);
+        S16MethodDestroy (cand->val);
+        cand->val = S16MethodCopy (meth);
     }
     else
         meth_list_add (list, meth);
@@ -121,7 +121,7 @@ void merge_inst_into_inst (S16ServiceInstance * to, S16ServiceInstance * from)
 
 int merge_inst_into_list (S16ServiceInstance * inst, inst_list_t * list)
 {
-    inst_list_it cand = inst_list_find_cmp (list, s16_inst_name_equal, inst);
+    inst_list_it cand = inst_list_find_cmp (list, S16InstanceNamesEqual, inst);
 
     if (cand)
     {
@@ -155,10 +155,10 @@ void merge_svc_into_svc (S16Service * to, S16Service * from)
 int merge_svc_into_list (S16Service * svc, svc_list_t * svcs)
 {
     S16Service * cand =
-        list_it_val (svc_list_find_cmp (svcs, s16_svc_name_equal, svc));
+        list_it_val (svc_list_find_cmp (svcs, S16ServiceNamesEqual, svc));
 
     if (!cand)
-        svc_list_add (svcs, s16_svc_copy (svc));
+        svc_list_add (svcs, S16ServiceCopy (svc));
     else
         merge_svc_into_svc (cand, svc);
 
@@ -168,9 +168,9 @@ int merge_svc_into_list (S16Service * svc, svc_list_t * svcs)
 /* TODO: Optimise this. */
 static void update_merged ()
 {
-    svc_list_deepdestroy (&merged.svcs, s16_svc_destroy);
+    svc_list_deepdestroy (&merged.svcs, S16ServiceDestroy);
 
-    merged.svcs = svc_list_map (&manifest.svcs, s16_svc_copy);
+    merged.svcs = svc_list_map (&manifest.svcs, S16ServiceCopy);
 
     svc_list_walk (&admin.svcs,
                    (svc_list_walk_fun)merge_svc_into_list,
@@ -182,7 +182,7 @@ void db_setup ()
     merged.svcs = svc_list_new ();
     manifest.svcs = svc_list_new ();
 }
-void db_destroy () { svc_list_deepdestroy (&manifest.svcs, s16_svc_destroy); }
+void db_destroy () { svc_list_deepdestroy (&manifest.svcs, S16ServiceDestroy); }
 
 int db_set_enabled (S16Path * path, bool enabled)
 {

@@ -42,88 +42,87 @@ extern "C"
     /* process tracking structures */
     typedef enum
     {
-        PT_CHILD,
-        PT_EXIT,
-    } pt_event;
+        kS16ProcessTrackerEventTypeChild,
+        kS16ProcessTrackerEventTypeExit,
+    } S16ProcessTrackerEventType;
 
     /* This structure contains details of a process tracker event.
      * In the case of child, the field 'ppid' contains the parent pid.
      * In the case of exit, the field 'flags' contains the exit data. */
     typedef struct pt_info_s
     {
-        pt_event event;
+        S16ProcessTrackerEventType event;
         pid_t pid, ppid;
         long flags;
-    } pt_info_t;
+    } S16ProcessTrackerEvent;
 
     typedef struct process_wait_s
     {
         int fd[2];
         pid_t pid;
-    } process_wait_t;
+    } S16PendingProcess;
 
-    typedef struct process_tracker_s process_tracker_t;
+    typedef struct process_tracker_s S16ProcessTracker;
 
     /* subreaping routines */
 
-    int subreap_acquire ();
-    int subreap_relinquish ();
-    int subreap_status ();
+    int S16SubreapingAcquire ();
+    int S16SubreapingRelinquish ();
+    int S16SubreapingStatus ();
 
     /* process basic routines */
 
     /* Forks a process for the command specified.
-     * This process waits until process_fork_continue()
+     * This process waits until S16PendingProcessContinue()
      * is called. */
-    process_wait_t * process_fork_wait (const char * cmd_,
-                                        void (*cleanup_cb) (void *),
-                                        void * cleanup_cb_arg);
+    S16PendingProcess * S16ProcessForkAndWait (const char * cmd_,
+                                               void (*cleanup_cb) (void *),
+                                               void * cleanup_cb_arg);
     /* Tells the child process to continue.
-     * This also frees the process_wait_t structure. */
-    void process_fork_continue (process_wait_t * pwait);
+     * This also frees the S16PendingProcess structure. */
+    void S16PendingProcessContinue (S16PendingProcess * pwait);
 
     /* process tracking routines */
 
     /* Creates a new process tracker and returns a handle to it.
      * Passed the KQueue descriptor that it may register its events. */
-    process_tracker_t * pt_new (int kq);
+    S16ProcessTracker * S16ProcessTrackerNew (int kq);
 
     /* Adds a PID to the watchlist. */
-    int pt_watch_pid (process_tracker_t * pt, pid_t pid);
+    int S16ProcessTrackerWatchPID (S16ProcessTracker * pt, pid_t pid);
 
     /* Removes a PID from the watchlist. */
-    void pt_disregard_pid (process_tracker_t * pt, pid_t pid);
+    void S16ProcessTrackerDisregardPID (S16ProcessTracker * pt, pid_t pid);
 
-    /* Investigates a kevent, that it may determine if it contains
+    /*
+     * Investigates a kevent, that it may determine if it contains
      * an event that is relevant to the process tracker.
      *
-     * Returns null for irrelevant, and a pointer to a pt_info_t for
-     * a relevant process tracker event.
+     * Returns null for irrelevant, and a pointer to a S16ProcessTrackerEvent
+     * for a relevant process tracker event.
      *
      * In the event of a child or an exit, there is no need to manually
      * add or remove, respectively, that PID from the watchlist - this is
-     * automatically done by the tracker. */
-    pt_info_t * pt_investigate_kevent (process_tracker_t * pt,
-                                       struct kevent * ke);
+     * automatically done by the tracker.
+     */
+    S16ProcessTrackerEvent *
+    S16ProcessTrackerInvestigateKEvent (S16ProcessTracker * pt,
+                                        struct kevent * ke);
 
     /* Destroys a process tracker.
      * Requires KQueue descriptor to remove itself from the queue. */
-    void pt_destroy (process_tracker_t * pt);
+    void S16ProcessTrackerDestroy (S16ProcessTracker * pt);
 
     /* misc routines */
 
     /* Returns 0 for a healthy exit, and either signal number or return code if
      * not.
      */
-    int exit_was_abnormal (int wstat);
-
-    /* What is said on the tin, this does.
-     * i.e. it does literally nothing functional. */
-    void discard_signal (int no);
+    int S16ExitWasAbnormal (int wstat);
 
     /* Reads a PID file.
      * Returns PID for success and 0 for fail. */
-    pid_t read_pid_file (const char * path);
+    pid_t S16PIDReadFromPIDFile (const char * path);
 
 #ifdef __cplusplus
 }

@@ -56,11 +56,11 @@ struct process_tracker_s
     pid_list_t pids;
 };
 
-process_tracker_t * pt_new (int kq)
+S16ProcessTracker * S16ProcessTrackerNew (int kq)
 {
     int i;
     struct sockaddr_nl addr;
-    process_tracker_t * pt = s16mem_alloc (sizeof (process_tracker_t));
+    S16ProcessTracker * pt = s16mem_alloc (sizeof (S16ProcessTracker));
     struct iovec iov[3];
     char nlmsghdrbuf[NLMSG_LENGTH (0)];
     struct nlmsghdr * nlmsghdr = (struct nlmsghdr *)nlmsghdrbuf;
@@ -117,7 +117,7 @@ process_tracker_t * pt_new (int kq)
     return pt;
 }
 
-int pt_watch_pid (process_tracker_t * pt, pid_t pid)
+int S16ProcessTrackerWatchPID (S16ProcessTracker * pt, pid_t pid)
 {
     pid_list_add (&pt->pids, pid);
     return 0;
@@ -125,25 +125,26 @@ int pt_watch_pid (process_tracker_t * pt, pid_t pid)
 
 /* The NetLink driver gets every process event straight from the kernel, as
  * such we cannot disregard a PID. Only delete it from our watch. */
-void pt_disregard_pid (process_tracker_t * pt, pid_t pid)
+void S16ProcessTrackerDisregardPID (S16ProcessTracker * pt, pid_t pid)
 {
     pid_list_del (&pt->pids, pid);
     return;
 }
 
-int pid_relevant (process_tracker_t * pt, pid_t pid, pid_t ppid)
+int pid_relevant (S16ProcessTracker * pt, pid_t pid, pid_t ppid)
 {
     return pid_list_find_eq (&pt->pids, pid) ||
            pid_list_find_eq (&pt->pids, ppid);
 }
 
 /* FIXME: I need to find out whether we should support sending back multiple
- * pt_info_t; is it not possible, after all, that we can get multiple messages
- * from netlink? */
-pt_info_t * pt_investigate_kevent (process_tracker_t * pt, struct kevent * ke)
+ * S16ProcessTrackerEvent; is it not possible, after all, that we can get
+ * multiple messages from netlink? */
+S16ProcessTrackerEvent *
+S16ProcessTrackerInvestigateKEvent (S16ProcessTracker * pt, struct kevent * ke)
 {
-    pt_info_t * result;
-    pt_info_t info;
+    S16ProcessTrackerEvent * result;
+    S16ProcessTrackerEvent info;
 
     struct msghdr msghdr;
     struct sockaddr_nl addr;
@@ -187,7 +188,7 @@ pt_info_t * pt_investigate_kevent (process_tracker_t * pt, struct kevent * ke)
         switch (ev->what)
         {
         case PROC_EVENT_FORK:
-            info.event = PT_CHILD;
+            info.event = kS16ProcessTrackerEventTypeChild;
             info.pid = ev->event_data.fork.child_tgid;
             info.ppid = ev->event_data.fork.parent_tgid;
             info.flags = 0;
@@ -199,14 +200,14 @@ pt_info_t * pt_investigate_kevent (process_tracker_t * pt, struct kevent * ke)
             }
             break;
         case PROC_EVENT_EXIT:
-            info.event = PT_EXIT;
+            info.event = kS16ProcessTrackerEventTypeExit;
             info.pid = ev->event_data.exit.process_tgid;
             info.ppid = 0;
             info.flags = ev->event_data.exit.exit_code;
 
             if (pid_relevant (pt, info.pid, 0))
             {
-                pt_disregard_pid (pt, info.pid);
+                S16ProcessTrackerDisregardPID (pt, info.pid);
                 goto reply;
             }
             break;
@@ -217,13 +218,13 @@ pt_info_t * pt_investigate_kevent (process_tracker_t * pt, struct kevent * ke)
     return 0;
 
 reply:
-    result = s16mem_alloc (sizeof (pt_info_t));
+    result = s16mem_alloc (sizeof (S16ProcessTrackerEvent));
     *result = info;
 
     return result;
 }
 
-void pt_destroy (process_tracker_t * pt)
+void S16ProcessTrackerDestroy (S16ProcessTracker * pt)
 {
     pid_list_destroy (&pt->pids);
     close (pt->sock);

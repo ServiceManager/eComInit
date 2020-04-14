@@ -66,7 +66,7 @@ ATF_TC_BODY (convert_svc, tc)
         .paths = *path_list_add (&paths, S16PathNew ("dep", "depinst"))};
 
     S16Property prop = {
-        .name = "prop", .type = PROP_STRING, .value.s = "propval"};
+        .name = "prop", .type = kS16PropertyTypeString, .value.s = "propval"};
 
     S16ServiceMethod meth = {.name = "meth",
                              .props = *prop_list_add (&props, &prop)};

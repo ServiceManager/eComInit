@@ -127,7 +127,7 @@ Unit * unit_add (S16Path * path);
 void unit_setup (Unit * unit);
 
 /* Sends a process-tracker event to the given unit. */
-void unit_ptevent (Unit * unit, pt_info_t * info);
+void unit_ptevent (Unit * unit, S16ProcessTrackerEvent * info);
 /* Sends a note to the given unit. */
 void unit_msg (Unit * unit, s16note_t * note);
 /* Notifies given unit that a readiness notification was received. */

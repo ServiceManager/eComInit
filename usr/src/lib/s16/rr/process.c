@@ -47,7 +47,7 @@
 void * s16mem_alloc (unsigned long);
 void s16mem_free (void *);
 
-int subreap_acquire ()
+int S16SubreapingAcquire ()
 {
 #if defined(__FreeBSD__) || defined(__DragonFly__)
     return procctl (P_PID, getpid (), PROC_REAP_ACQUIRE, NULL);
@@ -56,7 +56,7 @@ int subreap_acquire ()
 #endif
 }
 
-int subreap_relinquish ()
+int S16SubreapingRelinquish ()
 {
 #if defined(__FreeBSD__) || defined(__DragonFly__)
     return procctl (P_PID, getpid (), PROC_REAP_RELEASE, NULL);
@@ -65,7 +65,7 @@ int subreap_relinquish ()
 #endif
 }
 
-int subreap_status ()
+int S16SubreapingStatus ()
 {
 #if defined(__FreeBSD__) || defined(__DragonFly__)
     struct procctl_reaper_status pctl;
@@ -78,11 +78,11 @@ int subreap_status ()
 #endif
 }
 
-process_wait_t * process_fork_wait (const char * cmd_,
-                                    void (*cleanup_cb) (void *),
-                                    void * cleanup_cb_arg)
+S16PendingProcess * S16ProcessForkAndWait (const char * cmd_,
+                                           void (*cleanup_cb) (void *),
+                                           void * cleanup_cb_arg)
 {
-    process_wait_t * pwait = s16mem_alloc (sizeof (process_wait_t));
+    S16PendingProcess * pwait = s16mem_alloc (sizeof (S16PendingProcess));
     int n_spaces = 0;
     char *cmd = strdup (cmd_), *tofree = cmd, **argv = NULL, *saveptr = NULL;
     pid_t newPid;
@@ -130,14 +130,14 @@ process_wait_t * process_fork_wait (const char * cmd_,
     return pwait;
 }
 
-void process_fork_continue (process_wait_t * pwait)
+void S16PendingProcessContinue (S16PendingProcess * pwait)
 {
     write (pwait->fd[1], "0", 1);
     close (pwait->fd[1]);
     s16mem_free (pwait);
 }
 
-int exit_was_abnormal (int wstat)
+int S16ExitWasAbnormal (int wstat)
 {
     if (WIFEXITED (wstat))
         return WEXITSTATUS (wstat);
@@ -157,7 +157,7 @@ int exit_was_abnormal (int wstat)
 void discard_signal (int no) {}
 
 /* Borrowed from Epoch: http://universe2.us/epoch.html */
-pid_t read_pid_file (const char * path)
+pid_t S16PIDReadFromPIDFile (const char * path)
 {
     FILE * PIDFileDescriptor = fopen (path, "r");
     char PIDBuf[200], *TW = NULL, *TW2 = NULL;

@@ -92,14 +92,15 @@ bool unit_stopping (Unit * unit)
 /* Remove the given PID from our watch. */
 void unit_deregister_pid (Unit * unit, pid_t pid)
 {
-    pt_disregard_pid (manager.pt, pid);
+    S16ProcessTrackerDisregardPID (manager.pt, pid);
     pid_list_del (&unit->pids, pid);
 }
 
 /* 0 for failure, valid PID for success */
 pid_t unit_fork_and_register (Unit * unit, const char * cmd)
 {
-    process_wait_t * pwait = process_fork_wait (cmd, fork_cleanup_cb, NULL);
+    S16PendingProcess * pwait =
+        S16ProcessForkAndWait (cmd, fork_cleanup_cb, NULL);
     pid_t ret = 0;
 
     if (pwait == NULL || pwait->pid == 0)
@@ -111,9 +112,9 @@ pid_t unit_fork_and_register (Unit * unit, const char * cmd)
 
     ret = pwait->pid;
     S16LogPath (kS16LogDebug, unit->path, "Child PID: %d\n", ret);
-    pt_watch_pid (manager.pt, ret);
+    S16ProcessTrackerWatchPID (manager.pt, ret);
     pid_list_add (&unit->pids, ret);
-    process_fork_continue (pwait);
+    S16PendingProcessContinue (pwait);
 
     return ret;
 }
@@ -344,10 +345,10 @@ void unit_enter_state (Unit * unit, UnitState state)
     }
 }
 
-void unit_ptevent (Unit * unit, pt_info_t * info)
+void unit_ptevent (Unit * unit, S16ProcessTrackerEvent * info)
 {
     /* First of all, make sure to add/remove the PID from our list. */
-    if (info->event == PT_CHILD)
+    if (info->event == kS16ProcessTrackerEventTypeChild)
     {
         if (unit_has_pid (unit, info->pid))
         {
@@ -357,18 +358,18 @@ void unit_ptevent (Unit * unit, pt_info_t * info)
         else
         {
             /* isn't this done anyway by ptracker? */
-            pt_watch_pid (manager.pt, info->pid);
+            S16ProcessTrackerWatchPID (manager.pt, info->pid);
             pid_list_add (&unit->pids, info->pid);
         }
     }
-    else if (info->event == PT_EXIT)
+    else if (info->event == kS16ProcessTrackerEventTypeExit)
     {
         printf ("Deregistering %lu...\n", (uintptr_t)info->pid);
         unit_deregister_pid (unit, info->pid);
     }
 
     /* first of all, handle stop-related transitions */
-    if (info->event == PT_EXIT && unit_stopping (unit))
+    if (info->event == kS16ProcessTrackerEventTypeExit && unit_stopping (unit))
     {
         switch (unit->state)
         {
@@ -389,7 +390,8 @@ void unit_ptevent (Unit * unit, pt_info_t * info)
             }
         }
     }
-    else if (info->event == PT_EXIT && info->pid == unit->main_pid)
+    else if (info->event == kS16ProcessTrackerEventTypeExit &&
+             info->pid == unit->main_pid)
     { /* main PID has exited */
         unit->main_pid = 0;
         if (unit->timer_id)
@@ -398,7 +400,7 @@ void unit_ptevent (Unit * unit, pt_info_t * info)
         printf ("Main PID exited\n");
         /* if exit was S16_FATAL, go to maintenance instead - add this later
          */
-        if (exit_was_abnormal (info->flags))
+        if (S16ExitWasAbnormal (info->flags))
         {
             fprintf (stderr, "Bad exit in a main pid\n");
             /*if (unit->rtype == R_NO)
@@ -472,7 +474,8 @@ void unit_ptevent (Unit * unit, pt_info_t * info)
             return;
         }
     }
-    else if (info->event == PT_EXIT && info->pid == unit->secondary_pid)
+    else if (info->event == kS16ProcessTrackerEventTypeExit &&
+             info->pid == unit->secondary_pid)
     {
         if (unit->state == US_POSTSTART)
         {
@@ -480,7 +483,7 @@ void unit_ptevent (Unit * unit, pt_info_t * info)
                 timerset_del (&manager.ts, unit->timer_id);
             unit->secondary_pid = 0;
 
-            if (exit_was_abnormal (info->flags))
+            if (S16ExitWasAbnormal (info->flags))
             {
                 fprintf (stderr, "Bad exit in a secondary pid\n");
                 /*if (unit->rtype == R_NO)

@@ -43,7 +43,7 @@ typedef struct manager_s
     /* Repository handle */
     s16db_hdl_t h;
     /* Process-Tracker handle */
-    process_tracker_t * pt;
+    S16ProcessTracker * pt;
     // rreq_list_t rreq_queue;
     /* Timerset */
     timerset_t ts;

@@ -144,7 +144,7 @@ S16Path * S16PathOfGrapher ()
 }
 
 /* Dependency group functions */
-void s16_depgroup_destroy (S16DependencyGroup * depgroup)
+void S16DependencyGroupDestroy (S16DependencyGroup * depgroup)
 {
     if (depgroup->name)
         free (depgroup->name);
@@ -152,7 +152,8 @@ void s16_depgroup_destroy (S16DependencyGroup * depgroup)
     free (depgroup);
 }
 /* Makes a deep copy of a depgroup. */
-S16DependencyGroup * s16_depgroup_copy (const S16DependencyGroup * depgroup)
+S16DependencyGroup *
+S16DependencyGroupCopy (const S16DependencyGroup * depgroup)
 {
     S16DependencyGroup * r = malloc (sizeof (S16DependencyGroup));
     r->name = depgroup->name ? strdup (depgroup->name) : NULL;
@@ -162,91 +163,91 @@ S16DependencyGroup * s16_depgroup_copy (const S16DependencyGroup * depgroup)
     return r;
 }
 /* Returns true if b's name matches that of a. */
-bool s16_depgroup_name_equal (const S16DependencyGroup * a,
-                              const S16DependencyGroup * b)
+bool S16DependencyGroupNamesEqual (const S16DependencyGroup * a,
+                                   const S16DependencyGroup * b)
 {
     return a->name && b->name && !strcmp (a->name, b->name);
 }
 
 /* Property functions */
-void s16_prop_destroy (S16Property * prop)
+void S16PropertyDestroy (S16Property * prop)
 {
     free (prop->name);
-    if (prop->type == PROP_STRING)
+    if (prop->type == kS16PropertyTypeString)
         free (prop->value.s);
     free (prop);
 }
 
-S16Property * s16_prop_copy (const S16Property * prop)
+S16Property * S16PropertyCopy (const S16Property * prop)
 {
     S16Property * r = malloc (sizeof (S16Property));
     r->name = strdup (prop->name);
     r->type = prop->type;
-    if (prop->type == PROP_STRING)
+    if (prop->type == kS16PropertyTypeString)
         r->value.s = strdup (prop->value.s);
     else
         r->value.i = prop->value.i;
     return r;
 }
 
-bool s16_prop_name_equal (const S16Property * a, const S16Property * b)
+bool S16PropertyNamesEqual (const S16Property * a, const S16Property * b)
 {
     return !strcmp (a->name, b->name);
 }
 
 /* Method functions */
-S16ServiceMethod * s16_meth_copy (const S16ServiceMethod * meth)
+S16ServiceMethod * S16MethodCopy (const S16ServiceMethod * meth)
 {
     S16ServiceMethod * r = malloc (sizeof (S16ServiceMethod));
     r->name = strdup (meth->name);
-    r->props = prop_list_map (&meth->props, s16_prop_copy);
+    r->props = prop_list_map (&meth->props, S16PropertyCopy);
     return r;
 }
 
-bool s16_meth_name_equal (const S16ServiceMethod * a,
+bool S16MethodNamesEqual (const S16ServiceMethod * a,
                           const S16ServiceMethod * b)
 {
     return !strcmp (a->name, b->name);
 }
 
-void s16_meth_destroy (S16ServiceMethod * meth)
+void S16MethodDestroy (S16ServiceMethod * meth)
 {
     free (meth->name);
-    prop_list_deepdestroy (&meth->props, s16_prop_destroy);
+    prop_list_deepdestroy (&meth->props, S16PropertyDestroy);
     free (meth);
 }
 
 /* Instance functions */
 /* Destroys an instance. */
-void s16_inst_destroy (S16ServiceInstance * inst)
+void S16InstanceDestroy (S16ServiceInstance * inst)
 {
     S16PathDestroy (inst->path);
-    prop_list_deepdestroy (&inst->props, s16_prop_destroy);
-    meth_list_deepdestroy (&inst->meths, s16_meth_destroy);
-    depgroup_list_deepdestroy (&inst->depgroups, s16_depgroup_destroy);
+    prop_list_deepdestroy (&inst->props, S16PropertyDestroy);
+    meth_list_deepdestroy (&inst->meths, S16MethodDestroy);
+    depgroup_list_deepdestroy (&inst->depgroups, S16DependencyGroupDestroy);
     free (inst);
 }
 /* Makes a deep copy of a instance. */
-S16ServiceInstance * s16_inst_copy (const S16ServiceInstance * inst)
+S16ServiceInstance * S16InstanceCopy (const S16ServiceInstance * inst)
 {
     S16ServiceInstance * r = malloc (sizeof (S16ServiceInstance));
     r->path = S16PathCopy (inst->path);
-    r->props = prop_list_map (&inst->props, s16_prop_copy);
-    r->meths = meth_list_map (&inst->meths, s16_meth_copy);
-    r->depgroups = depgroup_list_map (&inst->depgroups, s16_depgroup_copy);
+    r->props = prop_list_map (&inst->props, S16PropertyCopy);
+    r->meths = meth_list_map (&inst->meths, S16MethodCopy);
+    r->depgroups = depgroup_list_map (&inst->depgroups, S16DependencyGroupCopy);
     r->state = inst->state;
     return r;
 }
 /* Returns true if b's name matches that of a. */
-bool s16_inst_name_equal (const S16ServiceInstance * a,
-                          const S16ServiceInstance * b)
+bool S16InstanceNamesEqual (const S16ServiceInstance * a,
+                            const S16ServiceInstance * b)
 {
     return !strcmp (a->path->inst, b->path->inst);
 }
 
 /* Service functions */
 
-S16Service * s16_svc_alloc ()
+S16Service * S16ServiceAlloc ()
 {
     S16Service * r = calloc (1, sizeof (S16Service));
     r->props = prop_list_new ();
@@ -256,32 +257,32 @@ S16Service * s16_svc_alloc ()
     return r;
 }
 
-S16Service * s16_svc_copy (const S16Service * svc)
+S16Service * S16ServiceCopy (const S16Service * svc)
 {
     S16Service * r = malloc (sizeof (S16Service));
     r->path = S16PathCopy (svc->path);
     r->def_inst = svc->def_inst ? strdup (svc->def_inst) : NULL;
-    r->props = prop_list_map (&svc->props, s16_prop_copy);
-    r->meths = meth_list_map (&svc->meths, s16_meth_copy);
-    r->insts = inst_list_map (&svc->insts, s16_inst_copy);
-    r->depgroups = depgroup_list_map (&svc->depgroups, s16_depgroup_copy);
+    r->props = prop_list_map (&svc->props, S16PropertyCopy);
+    r->meths = meth_list_map (&svc->meths, S16MethodCopy);
+    r->insts = inst_list_map (&svc->insts, S16InstanceCopy);
+    r->depgroups = depgroup_list_map (&svc->depgroups, S16DependencyGroupCopy);
     r->state = svc->state;
     return r;
 }
 
-void s16_svc_destroy (S16Service * svc)
+void S16ServiceDestroy (S16Service * svc)
 {
     S16PathDestroy (svc->path);
     if (svc->def_inst)
         free (svc->def_inst);
-    prop_list_deepdestroy (&svc->props, s16_prop_destroy);
-    meth_list_deepdestroy (&svc->meths, s16_meth_destroy);
-    inst_list_deepdestroy (&svc->insts, s16_inst_destroy);
-    depgroup_list_deepdestroy (&svc->depgroups, s16_depgroup_destroy);
+    prop_list_deepdestroy (&svc->props, S16PropertyDestroy);
+    meth_list_deepdestroy (&svc->meths, S16MethodDestroy);
+    inst_list_deepdestroy (&svc->insts, S16InstanceDestroy);
+    depgroup_list_deepdestroy (&svc->depgroups, S16DependencyGroupDestroy);
     free (svc);
 }
 
-bool s16_svc_name_equal (const S16Service * a, const S16Service * b)
+bool S16ServiceNamesEqual (const S16Service * a, const S16Service * b)
 {
     return !strcmp (a->path->svc, b->path->svc);
 }
