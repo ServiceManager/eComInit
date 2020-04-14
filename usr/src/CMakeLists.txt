@@ -18,6 +18,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 include_directories("${CMAKE_SOURCE_DIR}/hdr")
 include_directories("${CMAKE_SOURCE_DIR}")
 
+SET(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
+
+message("Libdir: ${CMAKE_INSTALL_LIBDIR}")
+
 if(UNIX AND NOT APPLE)
   if(CMAKE_SYSTEM_NAME MATCHES ".*Linux")
     set(LINUX TRUE)
@@ -103,6 +107,7 @@ if(S16_ENABLE_TESTS)
   installTopKyuafile(agent)
   installTopKyuafile(cmd)
 endif()
+
 
 #
 # Checks
