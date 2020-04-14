@@ -142,8 +142,8 @@ static void dispatch_sd_notify (pid_t pid, char * buf)
         else if (len > 7 && !strncmp (seg, "STATUS=", 7))
             unit_notify_status (unit, strndup (seg + 7, len - 7));
         else
-            s16_log (WARN, "Unhandled component of notify message: \"%s\"\n",
-                     seg);
+            s16_log (
+                WARN, "Unhandled component of notify message: \"%s\"\n", seg);
 
         seg = strtok_r (NULL, "\n", &saveptr);
     }
@@ -201,7 +201,8 @@ void sd_notify_srv_investigate_kevent (struct kevent * ev)
         creds = (CREDS *)CMSG_DATA (&cmsg.hdr);
         s16_log (DBG,
                  "Received SystemD-style notification from pid %lu: <%s>\n",
-                 CREDS_PID (creds), buf);
+                 CREDS_PID (creds),
+                 buf);
         dispatch_sd_notify (CREDS_PID (creds), buf);
     }
 #endif

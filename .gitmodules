@@ -1,12 +1,12 @@
 [submodule "external/libucl"]
-	path = external/libucl
+	path = usr/src/vendor/libucl
 	url = https://github.com/vstakhov/libucl.git
 [submodule "external/uthash"]
-	path = external/uthash
+	path = usr/src/vendor/uthash
 	url = https://github.com/troydhanson/uthash.git
 [submodule "external/SystemD"]
-	path = external/SystemD
+	path = usr/src/vendor/SystemD
 	url = git@github.com:System-XVI/SystemD.git
 [submodule "external/libnv-portable"]
-	path = external/libnv-portable
+	path = usr/src/vendor/libnv-portable
 	url = git@github.com:System-XVI/libnv-portable.git

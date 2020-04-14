@@ -33,7 +33,8 @@ ATF_TC (convert_svc);
 ATF_TC_HEAD (convert_svc, tc)
 {
     atf_tc_set_md_var (
-        tc, "descr",
+        tc,
+        "descr",
         "Test conversion of a service structure to and from JSON form.");
 }
 ATF_TC_BODY (convert_svc, tc)

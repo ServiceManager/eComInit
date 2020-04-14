@@ -57,13 +57,14 @@ int main (int argc, char * argv[])
     graph_init ();
 
     for (svc_list_it it = list_begin (s16db_get_all_services (&hdl));
-         it != NULL; it = list_next (it))
+         it != NULL;
+         it = list_next (it))
         graph_install_service (it->val);
 
     graph_setup_all ();
 
-    s16db_subscribe (&hdl, kq,
-                     N_ADMIN_REQ | N_RESTARTER_REQ | N_STATE_CHANGE | N_CONFIG);
+    s16db_subscribe (
+        &hdl, kq, N_ADMIN_REQ | N_RESTARTER_REQ | N_STATE_CHANGE | N_CONFIG);
 
     while (1)
     {

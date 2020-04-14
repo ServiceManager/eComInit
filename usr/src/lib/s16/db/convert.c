@@ -78,7 +78,8 @@ ucl_object_t * s16db_depgroup_to_ucl (depgroup_t * prop)
 {
     ucl_object_t * udep = ucl_object_typed_new (UCL_OBJECT);
     ins_key (udep, "grouping", s16db_depgroup_type_to_string (prop->type));
-    ins_key (udep, "restart-on",
+    ins_key (udep,
+             "restart-on",
              s16db_depgroup_restarton_to_string (prop->restart_on));
     ucl_object_t * paths = ins_key_arr (udep, "paths");
 
@@ -146,10 +147,10 @@ ucl_object_t * s16db_inst_to_ucl (svc_instance_t * inst)
     if (!depgroup_list_empty (&inst->depgroups))
         u_add_depgroups (uinst, &inst->depgroups);
 
-    ucl_object_insert_key (uinst, ucl_object_frombool (inst->enabled),
-                           "enabled", 0, 1);
-    ucl_object_insert_key (uinst, ucl_object_fromint (inst->state), "state", 0,
-                           1);
+    ucl_object_insert_key (
+        uinst, ucl_object_frombool (inst->enabled), "enabled", 0, 1);
+    ucl_object_insert_key (
+        uinst, ucl_object_fromint (inst->state), "state", 0, 1);
 
     free (path);
 
@@ -181,8 +182,8 @@ ucl_object_t * s16db_svc_to_ucl (svc_t * svc)
     if (!depgroup_list_empty (&svc->depgroups))
         u_add_depgroups (usvc, &svc->depgroups);
 
-    ucl_object_insert_key (usvc, ucl_object_fromint (svc->state), "state", 0,
-                           1);
+    ucl_object_insert_key (
+        usvc, ucl_object_fromint (svc->state), "state", 0, 1);
 
     free (path);
 
@@ -194,13 +195,13 @@ ucl_object_t * s16db_note_to_ucl (const s16note_t * note)
     ucl_object_t * unote = ucl_object_typed_new (UCL_OBJECT);
     char * path = s16_path_to_string (note->path);
 
-    ucl_object_insert_key (unote, ucl_object_fromint (note->note_type),
-                           "note-type", 0, 1);
-    ucl_object_insert_key (unote, ucl_object_fromint (note->type), "type", 0,
-                           1);
+    ucl_object_insert_key (
+        unote, ucl_object_fromint (note->note_type), "note-type", 0, 1);
+    ucl_object_insert_key (
+        unote, ucl_object_fromint (note->type), "type", 0, 1);
     ins_key (unote, "path", path);
-    ucl_object_insert_key (unote, ucl_object_fromint (note->reason), "reason",
-                           0, 1);
+    ucl_object_insert_key (
+        unote, ucl_object_fromint (note->reason), "reason", 0, 1);
 
     free (path);
 

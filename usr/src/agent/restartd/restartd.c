@@ -220,7 +220,8 @@ int main (int argc, char * argv[])
                 unit = manager_find_unit_for_pid (info->ppid);
 
             if (!unit)
-                fprintf (stderr, "error: no unit associated with pid %d\n",
+                fprintf (stderr,
+                         "error: no unit associated with pid %d\n",
                          info->pid);
             else
                 unit_ptevent (unit, info);
@@ -237,7 +238,8 @@ int main (int argc, char * argv[])
         case EVFILT_SIGNAL:
             fprintf (stderr,
                      "Restartd: Signal received: %lu. Additional data: %ld\n",
-                     ev.ident, ev.data);
+                     ev.ident,
+                     ev.data);
             if (ev.ident == SIGCHLD)
                 while (waitpid ((pid_t) (-1), 0, WNOHANG) > 0)
                     ;

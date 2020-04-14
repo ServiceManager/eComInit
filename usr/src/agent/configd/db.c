@@ -107,9 +107,11 @@ int merge_meth_into_list (method_t * meth, meth_list_t * list)
 
 void merge_inst_into_inst (svc_instance_t * to, svc_instance_t * from)
 {
-    prop_list_walk (&from->props, (prop_list_walk_fun)merge_prop_into_list,
+    prop_list_walk (&from->props,
+                    (prop_list_walk_fun)merge_prop_into_list,
                     (void *)&to->props);
-    meth_list_walk (&from->meths, (meth_list_walk_fun)merge_meth_into_list,
+    meth_list_walk (&from->meths,
+                    (meth_list_walk_fun)merge_meth_into_list,
                     (void *)&to->meths);
     depgroup_list_walk (&from->depgroups,
                         (depgroup_list_walk_fun)merge_depgroup_into_list,
@@ -138,9 +140,11 @@ void merge_svc_into_svc (svc_t * to, svc_t * from)
             free (to->def_inst);
         to->def_inst = strdup (from->def_inst);
     }
-    prop_list_walk (&from->props, (prop_list_walk_fun)merge_prop_into_list,
+    prop_list_walk (&from->props,
+                    (prop_list_walk_fun)merge_prop_into_list,
                     (void *)&to->props);
-    meth_list_walk (&from->meths, (meth_list_walk_fun)merge_meth_into_list,
+    meth_list_walk (&from->meths,
+                    (meth_list_walk_fun)merge_meth_into_list,
                     (void *)&to->meths);
     depgroup_list_walk (&from->depgroups,
                         (depgroup_list_walk_fun)merge_depgroup_into_list,
@@ -167,7 +171,8 @@ static void update_merged ()
 
     merged.svcs = svc_list_map (&manifest.svcs, s16_svc_copy);
 
-    svc_list_walk (&admin.svcs, (svc_list_walk_fun)merge_svc_into_list,
+    svc_list_walk (&admin.svcs,
+                   (svc_list_walk_fun)merge_svc_into_list,
                    (void *)&merged.svcs);
 }
 
@@ -192,7 +197,8 @@ int db_set_enabled (path_t * path, bool enabled)
             s16note_list_add (&notes,
                               s16note_new (N_ADMIN_REQ,
                                            enabled ? A_ENABLE : A_DISABLE,
-                                           it->val->path, 0));
+                                           it->val->path,
+                                           0));
         }
     }
     else

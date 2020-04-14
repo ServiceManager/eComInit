@@ -151,8 +151,8 @@ extern "C"
     }                                                                          \
     typedef int (*name##_list_walk_fun) (type, void *);                        \
     /* For each element e of a list, run fun(e) */                             \
-    INLINE int name##_list_walk (const name##_list_t * n,                      \
-                                 name##_list_walk_fun fun, void * ex)          \
+    INLINE int name##_list_walk (                                              \
+        const name##_list_t * n, name##_list_walk_fun fun, void * ex)          \
     {                                                                          \
         int r = 0;                                                             \
         list_foreach (name, n, it)                                             \
@@ -284,7 +284,8 @@ extern "C"
     }                                                                          \
     /* and convenience wrappers are here */                                    \
     INLINE name##_list_it name##_list_find_cmp (                               \
-        name##_list_t * n, bool (*fun) (const type, const type),               \
+        name##_list_t * n,                                                     \
+        bool (*fun) (const type, const type),                                  \
         const type extra)                                                      \
     {                                                                          \
         list_foreach (name, n, it) if (fun (it->val, extra)) return it;        \
@@ -303,8 +304,8 @@ extern "C"
     typedef int (*name##_list_walk_cmp_fn) (type, type);                       \
     /* For each element e of a list, run fun(e). Duplicated from list_walk to  \
      * avoid warnings. */                                                      \
-    INLINE int name##_list_walk_cmp (const name##_list_t * n,                  \
-                                     name##_list_walk_cmp_fn fun, type ex)     \
+    INLINE int name##_list_walk_cmp (                                          \
+        const name##_list_t * n, name##_list_walk_cmp_fn fun, type ex)         \
     {                                                                          \
         int r = 0;                                                             \
         list_foreach (name, n, it)                                             \
@@ -328,7 +329,8 @@ extern "C"
 
 #define list_foreach(name, list, as)                                           \
     for (name##_list_it tmp, as = list_begin (list);                           \
-         (as != NULL) && (tmp = list_next (as), list); as = tmp)
+         (as != NULL) && (tmp = list_next (as), list);                         \
+         as = tmp)
 #define list_begin(x) (x)->List
 #define list_next(x) (x)->Link
 #define list_it_val(x) x ? x->val : NULL
@@ -337,7 +339,8 @@ extern "C"
 #define LL_each2(name, list, as) list_foreach (name, list, as)
 #define LL_each(list, as)                                                      \
     for (__typeof__ ((list)->List) tmp, as = list_begin (list);                \
-         (as != NULL) && (tmp = list_next (as), list); as = tmp)
+         (as != NULL) && (tmp = list_next (as), list);                         \
+         as = tmp)
 #define LL_empty(list) (((list)->List) == NULL)
 #define LL_print(list)                                                         \
     {                                                                          \

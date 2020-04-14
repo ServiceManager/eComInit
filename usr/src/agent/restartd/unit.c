@@ -421,7 +421,8 @@ void unit_ptevent (Unit * unit, pt_info_t * info)
                 if (*fail_cnt > 5)
                 {
                     s16_log_path (
-                        ERR, unit->path,
+                        ERR,
+                        unit->path,
                         "Transitioning to maintenance because: Method "
                         "failed more than 5 times\n");
                     unit->target = US_MAINTENANCE;
@@ -492,7 +493,8 @@ void unit_ptevent (Unit * unit, pt_info_t * info)
                 if (*fail_cnt > 5)
                 {
                     s16_log_path (
-                        ERR, unit->path,
+                        ERR,
+                        unit->path,
                         "Transitioning to maintenance because: Method "
                         "failed more than 5 times\n");
                     unit->target = US_MAINTENANCE;
@@ -548,7 +550,8 @@ void unit_timer_event (long id, void * data)
 
         if (unit->fail_cnt[UM_PRESTART] > 5)
         {
-            s16_log_path (ERR, unit->path,
+            s16_log_path (ERR,
+                          unit->path,
                           "Transitioning to maintenance because: Method "
                           "timedout/failed 5 times in a row.");
             unit->target = US_MAINTENANCE;
@@ -585,8 +588,8 @@ void unit_notify_ready (Unit * unit)
 
 void unit_notify_status (Unit * unit, char * status)
 {
-    s16_log_path (INFO, unit->path, "Unit received status update: \"%s\"\n",
-                  status);
+    s16_log_path (
+        INFO, unit->path, "Unit received status update: \"%s\"\n", status);
 }
 
 bool unit_has_pid (Unit * unit, pid_t pid)

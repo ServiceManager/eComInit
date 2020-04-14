@@ -320,7 +320,10 @@ static void print_prefix (s16_log_level_t level, const path_t * svc)
     {
         printf (KWHT "[%s] "
                      "%s " KBLU "(%s)" KNRM ": %s ",
-                time_str, progname, spath, pfx);
+                time_str,
+                progname,
+                spath,
+                pfx);
         free (spath);
     }
     else

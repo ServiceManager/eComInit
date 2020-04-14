@@ -66,8 +66,8 @@ static void canonicalise_svc (ucl_object_t * svc)
             char * path;
 
             asprintf (&path, "%s:%s", name, ucl_object_tostring (uname));
-            ucl_object_insert_key (uinst, ucl_object_fromstring (path), "path",
-                                   0, 1);
+            ucl_object_insert_key (
+                uinst, ucl_object_fromstring (path), "path", 0, 1);
 
             ucl_object_unref (uname);
             free (path);
@@ -102,7 +102,9 @@ void import (str_list_t * paths)
         if (ucl_parser_get_error (parser))
         {
             failed++;
-            utstring_printf (errs, "\t%s: Manifest parser error: %s\n", path,
+            utstring_printf (errs,
+                             "\t%s: Manifest parser error: %s\n",
+                             path,
                              ucl_parser_get_error (parser));
             goto cleanup;
         }
@@ -126,7 +128,8 @@ void import (str_list_t * paths)
 
     if (failed)
     {
-        printf ("%d S16 service descriptions failed to load:\n%s", failed,
+        printf ("%d S16 service descriptions failed to load:\n%s",
+                failed,
                 utstring_body (errs));
     }
 }

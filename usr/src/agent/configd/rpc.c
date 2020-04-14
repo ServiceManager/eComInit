@@ -108,21 +108,21 @@ ucl_object_t * handle_get_path_merged (s16rpc_data_t * dat,
     if (res.type == SVC && res.s)
     {
         ucl_object_t * usvc = s16db_svc_to_ucl (res.s);
-        ucl_object_insert_key (reply, ucl_object_fromstring ("svc"), "type", 0,
-                               1);
+        ucl_object_insert_key (
+            reply, ucl_object_fromstring ("svc"), "type", 0, 1);
         ucl_object_insert_key (reply, usvc, "value", 0, 1);
     }
     else if (res.type == INSTANCE && res.i)
     {
         ucl_object_t * uinst = s16db_inst_to_ucl (res.i);
-        ucl_object_insert_key (reply, ucl_object_fromstring ("svc"), "type", 0,
-                               1);
+        ucl_object_insert_key (
+            reply, ucl_object_fromstring ("svc"), "type", 0, 1);
         ucl_object_insert_key (reply, uinst, "value", 0, 1);
     }
     else
     {
-        ucl_object_insert_key (reply, ucl_object_fromstring ("error"), "type",
-                               0, 1);
+        ucl_object_insert_key (
+            reply, ucl_object_fromstring ("error"), "type", 0, 1);
     }
 
     s16_path_destroy (path);
@@ -149,16 +149,16 @@ ucl_object_t * handle_subscribe (s16rpc_data_t * dat,
 
 void rpc_setup (s16rpc_srv_t * srv)
 {
-    s16rpc_srv_register_method (srv, "disable", 1,
-                                (s16rpc_fun_t)handle_disable);
+    s16rpc_srv_register_method (
+        srv, "disable", 1, (s16rpc_fun_t)handle_disable);
     s16rpc_srv_register_method (srv, "enable", 1, (s16rpc_fun_t)handle_disable);
-    s16rpc_srv_register_method (srv, "import-service", 2,
-                                (s16rpc_fun_t)handle_import_service);
-    s16rpc_srv_register_method (srv, "get-all-services-merged", 0,
-                                handle_get_all_services_merged);
-    s16rpc_srv_register_method (srv, "get-path-merged", 1,
-                                (s16rpc_fun_t)handle_get_path_merged);
+    s16rpc_srv_register_method (
+        srv, "import-service", 2, (s16rpc_fun_t)handle_import_service);
+    s16rpc_srv_register_method (
+        srv, "get-all-services-merged", 0, handle_get_all_services_merged);
+    s16rpc_srv_register_method (
+        srv, "get-path-merged", 1, (s16rpc_fun_t)handle_get_path_merged);
 
-    s16rpc_srv_register_method (srv, "subscribe", 1,
-                                (s16rpc_fun_t)handle_subscribe);
+    s16rpc_srv_register_method (
+        srv, "subscribe", 1, (s16rpc_fun_t)handle_subscribe);
 }

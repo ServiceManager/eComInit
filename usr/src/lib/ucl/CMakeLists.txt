@@ -1,1 +1,1 @@
-add_subdirectory (${CMAKE_SOURCE_DIR}/../../external/libucl libucl)
+add_subdirectory (${CMAKE_SOURCE_DIR}/vendor/libucl libucl)

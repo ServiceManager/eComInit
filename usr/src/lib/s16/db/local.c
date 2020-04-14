@@ -119,8 +119,10 @@ s16db_lookup_result_t s16db_lookup_path_in_scope (s16db_scope_t scope,
 
         if (!res.i)
         {
-            s16_log (INFO, "Failed to find instance %s of service %s!\n",
-                     path->inst, path->svc);
+            s16_log (INFO,
+                     "Failed to find instance %s of service %s!\n",
+                     path->inst,
+                     path->svc);
             return res;
         }
     }

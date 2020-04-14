@@ -59,7 +59,9 @@ int pt_watch_pid (process_tracker_t * pt, pid_t pid)
     i = kevent (pt->kq, &ke, 1, NULL, 0, NULL);
 
     if (i == -1)
-        fprintf (stderr, "Error: failed to watch PID %d: %s\n", pid,
+        fprintf (stderr,
+                 "Error: failed to watch PID %d: %s\n",
+                 pid,
                  strerror (errno));
     else
         pid_list_add (&pt->pids, pid);

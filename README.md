@@ -1,6 +1,6 @@
 # System XVI
 
-![System XVI Logo](doc/logotype.png)
+![System XVI Logo](usr/src/doc/logotype.png)
 
 ### Overview
 
@@ -105,5 +105,5 @@ System XVI is released under the Common Development and Distribution License
 (CDDL) version 1.1 only. Code under `external/` and `usr/src/vendor/` may be
 licensed otherwise, as these are sources from other projects.
 You may instead use System XVI under the terms of the GPLv3 if you wish, with
-the exception of [graph.c](app/graphd/graph.c) (see within for reasoning.)
+the exception of [graph.c](usr/src/agent/graphd/graph.c) (see within for reasoning.)
 
