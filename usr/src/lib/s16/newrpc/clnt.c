@@ -40,12 +40,12 @@ typedef struct
 
 S16List (s16r_method, s16r_method_t *);
 
-typedef struct s16r_srv_t
+struct s16r_srv_t
 {
     /* custom data */
     void * extra;
     s16r_method_list_t meths;
-} s16r_srv_t;
+};
 
 typedef void * (*s16r_fun0_t) (s16r_data_t *);
 typedef void * (*s16r_fun1_t) (s16r_data_t *, const void *);

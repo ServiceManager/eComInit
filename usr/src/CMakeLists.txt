@@ -15,26 +15,8 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${WARN_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS}")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-find_package(FLEX REQUIRED)
-find_package(Readline)
-find_package(PkgConfig)
-
-check_include_files(threads.h C11_THREADS)
-
-if(NOT C11_THREADS)
-	message("Using internal implementation of C11 threads")
-	include_directories("${PROJECT_SOURCE_DIR}/vendor/c11thrd")
-endif()
-
-check_library_exists(stdthreads "mtx_lock" "" LIBSTDTHREADS)
-
-find_package(Kqueue REQUIRED)
-find_package(Atf-C)
-
-if(NOT Atf-C_FOUND)
-    message("ATF not found; will not build test suite")
-    set(S16_ENABLE_TESTS FALSE)
-endif()
+include_directories("${CMAKE_SOURCE_DIR}/hdr")
+include_directories("${CMAKE_SOURCE_DIR}")
 
 if(UNIX AND NOT APPLE)
   if(CMAKE_SYSTEM_NAME MATCHES ".*Linux")
@@ -62,14 +44,32 @@ elseif(APPLE)
   set(OSX TRUE)
 endif()
 
-# java related
+#
+# Dependencies
+#
+
+find_package(FLEX REQUIRED)
+find_package(Readline)
+find_package(PkgConfig)
+
+check_include_files(threads.h C11_THREADS)
+
+if(NOT C11_THREADS)
+	message("Using internal implementation of C11 threads")
+	include_directories("${PROJECT_SOURCE_DIR}/vendor/c11thrd")
+endif()
+
+check_library_exists(stdthreads "mtx_lock" "" LIBSTDTHREADS)
+
+find_package(Kqueue REQUIRED)
+find_package(Atf-C)
+
+if(NOT Atf-C_FOUND)
+    message("ATF not found; will not build test suite")
+    set(S16_ENABLE_TESTS FALSE)
+endif()
 find_package(Java COMPONENTS Development)
 find_package(JNI)
-
-include_directories("${CMAKE_SOURCE_DIR}/hdr")
-include_directories("${CMAKE_SOURCE_DIR}")
-
-set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 
 if(NOT Java_Development_FOUND)
     message("JDK not found; will not build Java components")
@@ -104,6 +104,39 @@ if(S16_ENABLE_TESTS)
   installTopKyuafile(cmd)
 endif()
 
+#
+# Checks
+#
+
+set(S16_TOOLS_DIR ${CMAKE_SOURCE_DIR}/tools)
+set(S16_FIND_SOURCES ${S16_TOOLS_DIR}/find_nonexcept.ksh ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
+set(S16_COMPILE_COMMANDS ${CMAKE_BINARY_DIR}/compile_commands.json)
+
+# To force clang-tidy to emit coloured output, we compile a shared library
+# that replaces isatty() with a version that always returns 1.
+add_library(fakeisatty SHARED ${S16_TOOLS_DIR}/fakeisatty.c)
+
+# A fake target which includes all the relevant header dirs - we use its -I
+# and -D directives to correctly compile header-files with Clang-Tidy.
+set(S16_FAKE_HDR_DIR ${CMAKE_BINARY_DIR}/fakehdr)
+set(S16_FAKE_HDR ${S16_FAKE_HDR_DIR}/fakehdr.c)
+file(MAKE_DIRECTORY ${S16_FAKE_HDR_DIR})
+file(WRITE ${S16_FAKE_HDR} "" )
+add_executable(fakehdr EXCLUDE_FROM_ALL ${S16_FAKE_HDR})
+target_link_libraries(fakehdr nvp ucl uthash s16 PBus)
+
+add_custom_target(tidy
+  COMMAND
+    ${S16_TOOLS_DIR}/checkClangTidy.ksh ${CMAKE_BINARY_DIR}
+      `${S16_FIND_SOURCES} tidy`
+  COMMENT
+    "Run Clang-Tidy.")
+
+#
+# Subprojects
+#
+
+# Public header root
 set(hdrRoot "${CMAKE_SOURCE_DIR}/hdr")
 
 # Build external first
@@ -130,6 +163,10 @@ add_subdirectory(lib/PBus)
 
 #add_subdirectory(test/cxx-build)
 #add_custom_target(test DEPENDS test-cxx-build)
+
+#
+# Printout of options
+#
 
 function(FShow name flag)
     if(${flag})
