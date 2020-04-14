@@ -49,25 +49,6 @@ extern "C"
     void s16mem_free (void * ap);
 #endif
 
-    /* These are the types which are central to S16.
-     * Be aware that these types are not passed directly when using RPC
-     * interfaces - they are translated into a more suitable format for
-     * that, and then back to one of these types as appropriate. */
-    /* A service. */
-    typedef struct svc_s svc_t;
-    /* An object's unique id. */
-    typedef long obj_id_t;
-    /* A service instance. */
-    typedef struct svc_instance_s svc_instance_t;
-    /* A property. */
-    typedef struct property_s property_t;
-    /* A method. */
-    typedef struct method_s method_t;
-    /* A dependency group. */
-    typedef struct depgroup_s depgroup_t;
-    /* A path. */
-    typedef struct path_s path_t;
-
     typedef enum svc_state_e
     {
         S_NONE,
@@ -80,12 +61,12 @@ extern "C"
         S_MAX,
     } svc_state_t;
 
-    struct path_s
+    typedef struct path_s
     {
         bool full_qual;
         char * svc;
         char * inst;
-    };
+    } path_t;
 
     S16List (path, path_t *);
 
@@ -106,17 +87,17 @@ extern "C"
         ON_ANY,
     } depgroup_restarton_t;
 
-    struct depgroup_s
+    typedef struct depgroup_s
     {
         char * name;
         depgroup_type_t type;
         depgroup_restarton_t restart_on;
         path_list_t paths;
-    };
+    } depgroup_t;
 
     S16List (depgroup, depgroup_t *);
 
-    struct property_s
+    typedef struct property_s
     {
         char * name;
 
@@ -131,18 +112,18 @@ extern "C"
             long i;
             char * s;
         } value;
-    };
+    } property_t;
 
     S16List (prop, property_t *);
 
     /* TODO: think about how delegated restarters may want their methods to
      * look. */
-    struct method_s
+    typedef struct method_s
     {
         char * name;
         // char * exec;
         prop_list_t props;
-    };
+    } method_t;
 
     S16List (meth, method_t *);
 

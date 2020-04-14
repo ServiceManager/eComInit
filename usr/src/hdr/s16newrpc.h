@@ -26,15 +26,15 @@
 #ifndef S16NEWRPC_H_
 #define S16NEWRPC_H_
 
-#include <stddef.h>
-
-#include "nv.h"
-#include "ucl.h"
-
 #ifdef __cplusplus
 extern "C"
 {
 #endif
+
+#include <stddef.h>
+
+#include "nv.h"
+#include "ucl.h"
 
     typedef intptr_t boolptr_t;
     typedef intptr_t fdptr_t;

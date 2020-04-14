@@ -36,11 +36,13 @@ extern "C"
 #define kPBusSocketPath "/var/run/PBus.sock"
 
     /*
-     * NVList(SendResult) msgRecv(objectPath: String, selector: String,
-     *                            params: NVList)
+     * NVList(SendResult) msgRecv(fromBusname: String, objectPath: String,
+     *                            selector: String, params: NVList)
      * Or, in C form:
-     * nvlist_t * msgRecv(const char * objectPath, const char * selector,
-     *                    nvlist_t * params)
+     * nvlist_t * msgRecv(const char * fromBusname, const char * objectPath,
+     *                    const char * selector, nvlist_t * params)
+     *
+     * Note that fromBusname is always set NULL for a direct connection.
      */
     extern s16r_message_signature msgRecvSig;
 

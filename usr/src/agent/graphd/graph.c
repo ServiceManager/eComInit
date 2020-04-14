@@ -68,28 +68,36 @@ void vtx_edge_add (vertex_t * v, vertex_t * to)
 
 void vtx_online (vertex_t * v, void * reason)
 {
-    s16note_list_add (&notes, s16note_new (N_STATE_CHANGE, SC_ONLINE, v->path,
-                                           (int)(intptr_t)reason));
+    s16note_list_add (
+        &notes,
+        s16note_new (
+            N_STATE_CHANGE, SC_ONLINE, v->path, (int)(intptr_t)reason));
 }
 
 void vtx_offline (vertex_t * v, void * reason)
 {
-    s16note_list_add (&notes, s16note_new (N_STATE_CHANGE, SC_OFFLINE, v->path,
-                                           (int)(intptr_t)reason));
+    s16note_list_add (
+        &notes,
+        s16note_new (
+            N_STATE_CHANGE, SC_OFFLINE, v->path, (int)(intptr_t)reason));
 }
 
 void vtx_enable (vertex_t * v)
 {
-    s16note_list_add (&notes, s16note_new (N_STATE_CHANGE, SC_OFFLINE, v->path,
-                                           (int)(intptr_t)ON_RESTART));
+    s16note_list_add (
+        &notes,
+        s16note_new (
+            N_STATE_CHANGE, SC_OFFLINE, v->path, (int)(intptr_t)ON_RESTART));
 }
 
 /* n.b. we don't really need a reason for this; cut it all out and generate an
  * ON_RESTART event? */
 void vtx_disable (vertex_t * v, void * reason)
 {
-    s16note_list_add (&notes, s16note_new (N_STATE_CHANGE, SC_DISABLED, v->path,
-                                           (int)(intptr_t)reason));
+    s16note_list_add (
+        &notes,
+        s16note_new (
+            N_STATE_CHANGE, SC_DISABLED, v->path, (int)(intptr_t)reason));
 }
 
 static void vtx_dependencies_do (vertex_t * v, void (*fun) (vertex_t *, void *),
@@ -493,7 +501,9 @@ satisfied_t depgroup_is_satisfied (vertex_t * v, bool recurse)
             }
         }
 
-        s16_log_path (INFO, v->path, "Optional_all: %s\n",
+        s16_log_path (INFO,
+                      v->path,
+                      "Optional_all: %s\n",
                       sat == SATISFIED ? "Satisfied" : "Not satisfied");
 
         return sat;
@@ -566,6 +576,12 @@ void graph_setup_all ()
 {
     s16note_t * note;
 
+    /* This stuff needs to be moved to a test */
+
+#define processNotes()                                                         \
+    while ((note = s16note_list_lpop (&notes)))                                \
+    graph_process_note (note)
+
     list_foreach (vertex, &graph, it) vtx_setup (it->val);
     // print_all ();
     list_foreach (vertex, &graph, it) if (it->val->type == V_INST &&
@@ -575,29 +591,30 @@ void graph_setup_all ()
         s16note_list_add (
             &notes, s16note_new (N_STATE_CHANGE, SC_OFFLINE, it->val->path, 0));
     }
-    while (note = s16note_list_lpop (&notes))
-        graph_process_note (note);
+    processNotes ();
+
     // print_all ();
 
     printf ("Now trying disable...\n");
-    s16note_list_add (&notes, s16note_new (N_ADMIN_REQ, A_DISABLE,
-                                           s16_path_new ("a", "i"), ON_NONE));
-    while (note = s16note_list_lpop (&notes))
-        graph_process_note (note);
+    s16note_list_add (
+        &notes,
+        s16note_new (N_ADMIN_REQ, A_DISABLE, s16_path_new ("a", "i"), ON_NONE));
+    processNotes ();
 
     printf ("Now trying enable again...\n");
 
-    s16note_list_add (&notes, s16note_new (N_ADMIN_REQ, A_ENABLE,
-                                           s16_path_new ("a", "i"), ON_NONE));
-    while (note = s16note_list_lpop (&notes))
-        graph_process_note (note);
+    s16note_list_add (
+        &notes,
+        s16note_new (N_ADMIN_REQ, A_ENABLE, s16_path_new ("a", "i"), ON_NONE));
+    processNotes ();
 
     printf ("Now trying an offline/online..\n");
 
-    s16note_list_add (&notes, s16note_new (N_STATE_CHANGE, SC_OFFLINE,
-                                           s16_path_new ("a", "i"), ON_NONE));
-    while (note = s16note_list_lpop (&notes))
-        graph_process_note (note);
+    s16note_list_add (
+        &notes,
+        s16note_new (
+            N_STATE_CHANGE, SC_OFFLINE, s16_path_new ("a", "i"), ON_NONE));
+    processNotes ();
 
     print_all ();
 }
@@ -621,18 +638,19 @@ void vtx_notify_start (vertex_t * v, void * vreason)
             }
             else
             {
-                s16_log_path (INFO, v->path,
-                              "Bringing up because dependency went up\n");
-                s16note_list_add (&notes, s16note_new (N_STATE_CHANGE,
-                                                       SC_ONLINE, v->path, 0));
+                s16_log_path (
+                    INFO, v->path, "Bringing up because dependency went up\n");
+                s16note_list_add (
+                    &notes,
+                    s16note_new (N_STATE_CHANGE, SC_ONLINE, v->path, 0));
             }
         }
         break;
 
     case V_DEPGROUP:
     case V_SVC:
-        vtx_dependents_do (v, vtx_notify_start,
-                           (void *)(intptr_t)v->restart_on);
+        vtx_dependents_do (
+            v, vtx_notify_start, (void *)(intptr_t)v->restart_on);
     }
 }
 
@@ -651,11 +669,13 @@ void vtx_notify_stop (vertex_t * v, void * vreason)
         }
         else
         {
-            s16_log_path (DBG, v->path,
+            s16_log_path (DBG,
+                          v->path,
                           "Bringing down in response to dependency down.\n");
 
-            s16note_list_add (&notes, s16note_new (N_STATE_CHANGE, SC_OFFLINE,
-                                                   v->path, reason));
+            s16note_list_add (
+                &notes,
+                s16note_new (N_STATE_CHANGE, SC_OFFLINE, v->path, reason));
         }
         break;
 
@@ -666,8 +686,11 @@ void vtx_notify_stop (vertex_t * v, void * vreason)
 
         /* if we only restart on, for example, ON_ERROR (1), and reason is only
          * ON_RESTART (2), then we don't need to propagate it. */
-        s16_log_path (INFO, v->path, "v->Restart_on: %d < Restart: %d?\n",
-                      v->restart_on, reason);
+        s16_log_path (INFO,
+                      v->path,
+                      "v->Restart_on: %d < Restart: %d?\n",
+                      v->restart_on,
+                      reason);
         if (v->restart_on < reason)
             break;
 
@@ -767,14 +790,16 @@ void vtx_process_admin_req (vertex_t * v, s16note_admin_type_t type, int reason)
         v->to_offline = true;
         v->is_enabled = false;
 
-        s16_log_path (INFO, v->path,
+        s16_log_path (INFO,
+                      v->path,
                       "Received administrative request to disable. Shutting "
                       "down any dependencies first.\n");
 
-        vtx_dependents_do (v, vtx_notify_admin_disable,
-                           (void *)(intptr_t)reason);
+        vtx_dependents_do (
+            v, vtx_notify_admin_disable, (void *)(intptr_t)reason);
         if (vtx_can_go_down (v, true))
-            s16_log_path (INFO, v->path,
+            s16_log_path (INFO,
+                          v->path,
                           "No subnodes to deal with; can disable directly.\n");
         list_foreach (vertex, &graph, it)
         {
@@ -787,8 +812,8 @@ void vtx_process_admin_req (vertex_t * v, s16note_admin_type_t type, int reason)
         v->to_offline = false;
         v->is_enabled = true;
 
-        s16_log_path (INFO, v->path,
-                      "Received administrative request to enable.\n");
+        s16_log_path (
+            INFO, v->path, "Received administrative request to enable.\n");
 
         vtx_enable (v);
         break;
@@ -815,8 +840,8 @@ void vtx_process_state_change (vertex_t * v, s16note_sc_type_t type, int reason)
         v->to_offline = false;
         if (to_offline)
         {
-            vtx_dependencies_do (v, vtx_offline_dependency,
-                                 (void *)(intptr_t)reason);
+            vtx_dependencies_do (
+                v, vtx_offline_dependency, (void *)(intptr_t)reason);
             if (v->to_disable)
                 vtx_disable (v, (void *)(intptr_t)reason);
         }
@@ -848,8 +873,8 @@ void graph_process_note (s16note_t * note)
     if (note->note_type == N_ADMIN_REQ)
         vtx_process_admin_req (v, note->type, note->reason);
     else if (note->note_type == N_STATE_CHANGE)
-        vtx_process_state_change (vtx_find_by_path (note->path), note->type,
-                                  note->reason);
+        vtx_process_state_change (
+            vtx_find_by_path (note->path), note->type, note->reason);
     else
         s16_log (ERR, "Note type not handled.\n");
 }
@@ -865,13 +890,15 @@ void print_all ()
     {
         char lbuf[256];
         if (it->val->type == V_SVC)
-            sprintf (lbuf, "\"%s\" [shape=cylinder] %s\n",
+            sprintf (lbuf,
+                     "\"%s\" [shape=cylinder] %s\n",
                      s16_path_to_string (it->val->path),
                      depgroup_is_satisfied (it->val, false)
                          ? "[style=filled, fillcolor=green]"
                          : "");
         else if (it->val->type == V_INST)
-            sprintf (lbuf, "\"%s\" [shape=component] %s\n",
+            sprintf (lbuf,
+                     "\"%s\" [shape=component] %s\n",
                      s16_path_to_string (it->val->path),
                      it->val->state == S_ONLINE
                          ? "[style=filled, fillcolor=green]"
@@ -894,18 +921,22 @@ void print_all ()
                 dgts = "exclude-all";
                 break;
             }
-            sprintf (lbuf, "\"%s\" [shape=note, label=\"%s\\n%s\"]\n",
+            sprintf (lbuf,
+                     "\"%s\" [shape=note, label=\"%s\\n%s\"]\n",
                      s16_path_to_string (it->val->path),
-                     s16_path_to_string (it->val->path), dgts);
+                     s16_path_to_string (it->val->path),
+                     dgts);
         }
 
         strcat (buf, lbuf);
 
         for (edge_list_it ite = list_begin (&((it->val)->dependents));
-             ite != NULL; ite = list_next (ite))
+             ite != NULL;
+             ite = list_next (ite))
         {
             char lbuf[256];
-            sprintf (lbuf, "\"%s\" -> \"%s\" [label=\"depends on\"];\n",
+            sprintf (lbuf,
+                     "\"%s\" -> \"%s\" [label=\"depends on\"];\n",
                      s16_path_to_string (ite->val->to->path),
                      s16_path_to_string (ite->val->from->path));
             strcat (buf, lbuf);

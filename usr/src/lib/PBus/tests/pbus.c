@@ -42,14 +42,21 @@ static void * testFun (PBusObject * self, PBusInvocationContext * ctx,
                        const char * strA, const char * strB)
 {
     printf ("String A: %s, b: %s\n", strA, strB);
+    ATF_CHECK_STREQ (strA, "Hello");
+    ATF_CHECK_STREQ (strB, "World");
+    ATF_CHECK_STREQ ("pbus:/system/testSvc", ctx->fromBusname);
+    ATF_CHECK_STREQ ("a/b/c", ctx->selfPath);
+    ATF_CHECK_STREQ ("TestMeth", ctx->selector);
+
     return "Done!";
 }
 
-PBusMethod testMeth = {.fun = testFun, .sig = &testMethSig};
+PBusMethod testMeth = {.fnImplementation = (PBusFun)testFun,
+                       .messageSignature = &testMethSig};
 
 PBusMethod * testMethSigs[2] = {&testMeth, NULL};
 
-PBusClass testCls = {.aMethods = &testMethSigs};
+PBusClass testCls = {.methods = &testMethSigs};
 
 ATF_TC (send_message);
 ATF_TC_HEAD (send_message, tc)
@@ -69,35 +76,33 @@ ATF_TC_BODY (send_message, tc)
     nvlist_add_string (params, "argA", "Hello");
     nvlist_add_string (params, "argB", "World");
 
-#define makeObj(name)                                                          \
-    name = calloc (1, sizeof (*name));                                         \
-    name->aName = #name;                                                       \
-    name->aIsA = &testCls
+#define makeObj(obj)                                                           \
+    obj = calloc (1, sizeof (*obj));                                           \
+    obj->name = #obj;                                                          \
+    obj->isA = &testCls
 
     makeObj (a);
     makeObj (b);
     makeObj (c);
+    makeObj (srv->rootObject);
 
-    srv->aRootObject = calloc (1, sizeof (PBusObject));
-    srv->aRootObject->aIsA = &testCls;
-
-#define addObjToObj(b, a) PBusObject_list_add (&a->aSubObjects, b)
-    addObjToObj (a, srv->aRootObject);
+#define addObjToObj(b, a) PBusObject_list_add (&a->subObjects, b)
+    addObjToObj (a, srv->rootObject);
     addObjToObj (b, a);
     addObjToObj (c, b);
 
-    res =
-        findReceiver_root (srv, "", "pbus:/system/testSvc", "TestMeth", params);
+    res = findReceiver_root (
+        srv, "a/b/c", "pbus:/system/testSvc", "TestMeth", params);
     // printf ("%s\n", ucl_object_emit (nvlist_to_ucl (res), UCL_EMIT_JSON));
     nvlist_destroy (res);
 
     nvlist_destroy (params);
 
 #define destroyObj(a)                                                          \
-    PBusObject_list_destroy (&a->aSubObjects);                                 \
+    PBusObject_list_destroy (&a->subObjects);                                  \
     free (a)
 
-    destroyObj (srv->aRootObject);
+    destroyObj (srv->rootObject);
     destroyObj (a);
     destroyObj (b);
     destroyObj (c);

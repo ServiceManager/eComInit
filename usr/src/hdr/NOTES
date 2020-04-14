@@ -1,6 +1,0 @@
-Returns: struct { error: number, result: variable } SendResult;
-
-To Bus: SendResult msgSend( endPoint: string, objectPath: list[string], params: nvlist)
-
-To endpoint: SendResult msgSend(objectPath: string, params: nvlist)
-SendResult msgSend(objectPath: string, params: nvlist)

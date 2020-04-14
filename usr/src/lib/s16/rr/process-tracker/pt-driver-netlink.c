@@ -49,12 +49,12 @@
 void * s16mem_alloc (unsigned long);
 void s16mem_free (void *);
 
-typedef struct process_tracker_s
+struct process_tracker_s
 {
     int kq;
     int sock;
     pid_list_t pids;
-} process_tracker_t;
+};
 
 process_tracker_t * pt_new (int kq)
 {
@@ -71,7 +71,8 @@ process_tracker_t * pt_new (int kq)
     pt->kq = kq;
     pt->pids = pid_list_new ();
 
-    pt->sock = socket (PF_NETLINK, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC,
+    pt->sock = socket (PF_NETLINK,
+                       SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC,
                        NETLINK_CONNECTOR);
 
     addr.nl_family = AF_NETLINK;
@@ -109,8 +110,10 @@ process_tracker_t * pt_new (int kq)
     i = kevent (pt->kq, &ke, 1, NULL, 0, NULL);
 
     if (i == -1)
-        fprintf (stderr, "Error: failed to watch NetLink socket %d: %s\n",
-                 pt->sock, strerror (errno));
+        fprintf (stderr,
+                 "Error: failed to watch NetLink socket %d: %s\n",
+                 pt->sock,
+                 strerror (errno));
     return pt;
 }
 
@@ -169,7 +172,8 @@ pt_info_t * pt_investigate_kevent (process_tracker_t * pt, struct kevent * ke)
         return 0;
 
     for (struct nlmsghdr * nlmsghdr = (struct nlmsghdr *)buf;
-         NLMSG_OK (nlmsghdr, len); nlmsghdr = NLMSG_NEXT (nlmsghdr, len))
+         NLMSG_OK (nlmsghdr, len);
+         nlmsghdr = NLMSG_NEXT (nlmsghdr, len))
     {
         struct cn_msg * cn_msg;
         struct proc_event * ev;

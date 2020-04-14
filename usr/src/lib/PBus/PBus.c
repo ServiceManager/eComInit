@@ -43,14 +43,15 @@ typedef void * (*PB4ParamFun) (PBusObject *, PBusInvocationContext *,
 s16r_message_signature msgRecvSig = {
     .rtype = {.kind = S16R_KNVLIST},
     .nargs = 2,
-    .args = {{.name = "objectPath", .type = {.kind = S16R_KSTRING}},
+    .args = {{.name = "fromBusname", .type = {.kind = S16R_KSTRING}},
+             {.name = "objectPath", .type = {.kind = S16R_KSTRING}},
              {.name = "selector", .type = {.kind = S16R_KSTRING}},
              {.name = "params", .type = {.kind = S16R_KNVLIST}},
              {.name = NULL}}};
 
 static bool matchObject (PBusObject * o, const char * n)
 {
-    return !strcmp (o->aName, n);
+    return !strcmp (o->name, n);
 }
 
 static void * dispatchFun (PBusObject * self, PBusInvocationContext * ctx,
@@ -59,34 +60,35 @@ static void * dispatchFun (PBusObject * self, PBusInvocationContext * ctx,
     void * res;
     void ** params;
 
-    if (deserialiseMsgArgs (nvparams, meth->sig, (void **)&params))
+    if (deserialiseMsgArgs (nvparams, meth->messageSignature, (void **)&params))
     {
         printf ("Error deserialising message args!\n");
         return NULL;
     }
 
 #define Param(i) params[i]
-    switch (meth->sig->nargs)
+    switch (meth->messageSignature->nargs)
     {
     case 0:
-        res = ((PB0ParamFun)meth->fun) (self, ctx);
+        res = ((PB0ParamFun)meth->fnImplementation) (self, ctx);
         break;
 
     case 1:
-        res = ((PB1ParamFun)meth->fun) (self, ctx, Param (0));
+        res = ((PB1ParamFun)meth->fnImplementation) (self, ctx, Param (0));
         break;
 
     case 2:
-        res = ((PB2ParamFun)meth->fun) (self, ctx, Param (0), Param (1));
+        res = ((PB2ParamFun)meth->fnImplementation) (
+            self, ctx, Param (0), Param (1));
         break;
 
     case 3:
-        res = ((PB3ParamFun)meth->fun) (
+        res = ((PB3ParamFun)meth->fnImplementation) (
             self, ctx, Param (0), Param (1), Param (2));
         break;
 
     case 4:
-        res = ((PB4ParamFun)meth->fun) (
+        res = ((PB4ParamFun)meth->fnImplementation) (
             self, ctx, Param (0), Param (1), Param (2), Param (3));
         break;
 
@@ -96,7 +98,7 @@ static void * dispatchFun (PBusObject * self, PBusInvocationContext * ctx,
     }
 #undef Param
 
-    destroyMsgArgs (params, meth->sig);
+    destroyMsgArgs (params, meth->messageSignature);
     return res;
 }
 
@@ -106,10 +108,10 @@ static nvlist_t * sendMessage (PBusObject * self, PBusInvocationContext * ctx,
     nvlist_t * response = nvlist_create (0);
 
     /* check if notes in future */
-    if (!meth->sig->raw)
+    if (!meth->messageSignature->raw)
     {
         void * result = dispatchFun (self, ctx, meth, params);
-        serialise (response, "result", &result, &meth->sig->rtype);
+        serialise (response, "result", &result, &meth->messageSignature->rtype);
     }
 
     return response;
@@ -120,24 +122,29 @@ static nvlist_t * dispatchMessage (PBusObject * self, void * user,
                                    const char * fromBusname,
                                    const char * selector, nvlist_t * params)
 {
-    PBusInvocationContext ctx = {.selfPath = selfPath,
+    PBusInvocationContext ctx = {.fullSelfPath = fullPath,
+                                 .selfPath = selfPath,
                                  .user = user,
                                  .selector = selector,
                                  .fromBusname = fromBusname};
 
-    if (self->aIsA->fnDispatchMessage)
-        return self->aIsA->fnDispatchMessage (self, &ctx, params);
+    if (self->isA->fnDispatchMessage)
+        return self->isA->fnDispatchMessage (self, &ctx, params);
     else
     {
         PBusMethod * meth;
-        for (int i = 0; (meth = (*self->aIsA->aMethods)[i]); i++)
+        for (int i = 0; (meth = (*self->isA->methods)[i]); i++)
         {
-            printf ("Candidate: %s. Tofind: %s\n", meth->sig->name, selector);
-            if (!strcmp (selector, meth->sig->name))
+            printf ("Candidate: %s. Tofind: %s\n",
+                    meth->messageSignature->name,
+                    selector);
+            if (!strcmp (selector, meth->messageSignature->name))
                 return sendMessage (self, &ctx, meth, params);
         }
 
-        printf ("Failed to find handler!\n");
+        printf ("Failed to find handler for %s in object %s!\n",
+                selector,
+                fullPath);
         return NULL;
     }
 }
@@ -155,9 +162,9 @@ static nvlist_t * findReceiver (PBusObject * self, void * extraData,
     {
         char * next = PBusPathElement_list_lpop (remainingPath);
 
-        if (self->aIsA->fnResolveSubObject)
+        if (self->isA->fnResolveSubObject)
         {
-            self = self->aIsA->fnResolveSubObject (
+            self = self->isA->fnResolveSubObject (
                 self, &extraData, fullPath, next, remainingPath, selector);
             if (!self)
                 return /* ERROR */ NULL;
@@ -173,7 +180,7 @@ static nvlist_t * findReceiver (PBusObject * self, void * extraData,
         else
         {
             PBusObject_list_it it =
-                PBusObject_list_find (&self->aSubObjects,
+                PBusObject_list_find (&self->subObjects,
                                       (PBusObject_list_find_fn)matchObject,
                                       (void *)next);
             if (!it)
@@ -218,9 +225,9 @@ nvlist_t * findReceiver_root (PBusServer * srv, const char * path,
 
     if (!path)
         result = dispatchMessage (
-            srv->aRootObject, NULL, NULL, NULL, fromBusname, selector, params);
+            srv->rootObject, NULL, NULL, NULL, fromBusname, selector, params);
     else
-        result = findReceiver (srv->aRootObject,
+        result = findReceiver (srv->rootObject,
                                NULL,
                                path,
                                NULL,

@@ -75,7 +75,7 @@ typedef struct
 
 S16List (s16rpc_conn, s16rpc_conn_t *);
 
-typedef struct s16rpc_srv_s
+struct s16rpc_srv_s
 {
     /* if this is true, don't try to accept() on fd */
     bool is_client;
@@ -86,7 +86,7 @@ typedef struct s16rpc_srv_s
     void * extra;
     s16rpc_method_list_t meths;
     s16rpc_conn_list_t conns;
-} s16rpc_srv_t;
+};
 
 static s16rpc_conn_t * conn_new (s16rpc_srv_t * srv, int fd)
 {
@@ -138,10 +138,10 @@ ucl_object_t * make_error (int code, const char * message, ucl_object_t * data)
 {
     ucl_object_t * uerr = ucl_object_typed_new (UCL_OBJECT);
     ucl_object_insert_key (uerr, ucl_object_fromint (code), "code", 0, 0);
-    ucl_object_insert_key (uerr, ucl_object_fromstring (message), "message", 0,
-                           0);
-    ucl_object_insert_key (uerr, data ? data : ucl_object_typed_new (UCL_NULL),
-                           "data", 0, 0);
+    ucl_object_insert_key (
+        uerr, ucl_object_fromstring (message), "message", 0, 0);
+    ucl_object_insert_key (
+        uerr, data ? data : ucl_object_typed_new (UCL_NULL), "data", 0, 0);
     return uerr;
 }
 
@@ -149,14 +149,17 @@ void reply_error (s16rpc_conn_t * conn, const ucl_object_t * id, int code,
                   const char * message, ucl_object_t * data)
 {
     ucl_object_t * msg = ucl_object_typed_new (UCL_OBJECT);
-    ucl_object_insert_key (msg, ucl_object_fromstring (S16_JSONRPC_VERSION),
-                           "jsonrpc", 0, 0);
-    ucl_object_insert_key (msg, make_error (code, message, data), "error", 0,
-                           0);
-    /* must copy id as it will be torn down in unref of original msg */
     ucl_object_insert_key (
-        msg, id ? ucl_object_copy (id) : ucl_object_typed_new (UCL_NULL), "id",
-        0, 0);
+        msg, ucl_object_fromstring (S16_JSONRPC_VERSION), "jsonrpc", 0, 0);
+    ucl_object_insert_key (
+        msg, make_error (code, message, data), "error", 0, 0);
+    /* must copy id as it will be torn down in unref of original msg */
+    ucl_object_insert_key (msg,
+                           id ? ucl_object_copy (id)
+                              : ucl_object_typed_new (UCL_NULL),
+                           "id",
+                           0,
+                           0);
     write_object (conn->fd, msg);
     ucl_object_unref (msg);
 }
@@ -165,13 +168,16 @@ void reply_result (s16rpc_conn_t * conn, const ucl_object_t * id,
                    ucl_object_t * result)
 {
     ucl_object_t * msg = ucl_object_typed_new (UCL_OBJECT);
-    ucl_object_insert_key (msg, ucl_object_fromstring (S16_JSONRPC_VERSION),
-                           "jsonrpc", 0, 0);
+    ucl_object_insert_key (
+        msg, ucl_object_fromstring (S16_JSONRPC_VERSION), "jsonrpc", 0, 0);
     ucl_object_insert_key (msg, result, "result", 0, 0);
     /* must copy id as it will be torn down in unref of original msg */
-    ucl_object_insert_key (
-        msg, id ? ucl_object_copy (id) : ucl_object_typed_new (UCL_NULL), "id",
-        0, 0);
+    ucl_object_insert_key (msg,
+                           id ? ucl_object_copy (id)
+                              : ucl_object_typed_new (UCL_NULL),
+                           "id",
+                           0,
+                           0);
     write_object (conn->fd, msg);
     ucl_object_unref (msg);
 }
@@ -191,8 +197,8 @@ ucl_object_t * dispatch_method (s16rpc_data_t * dat, void * fun, size_t nparams,
     case 3:
         return ((s16rpc_fun3_t)fun) (dat, Param (0), Param (1), Param (2));
     case 4:
-        return ((s16rpc_fun4_t)fun) (dat, Param (0), Param (1), Param (2),
-                                     Param (3));
+        return ((s16rpc_fun4_t)fun) (
+            dat, Param (0), Param (1), Param (2), Param (3));
     }
 #undef Param
     assert ("This should not be reached");
@@ -236,15 +242,16 @@ void handle_msg (s16rpc_srv_t * srv, s16rpc_conn_t * conn)
             goto cleanup;
         }
 
-        cand = list_it_val (s16rpc_method_list_find (
-            &srv->meths, (s16rpc_method_list_find_fn)match_method,
-            (void *)txt));
+        cand = list_it_val (
+            s16rpc_method_list_find (&srv->meths,
+                                     (s16rpc_method_list_find_fn)match_method,
+                                     (void *)txt));
 
         if (!cand)
         {
             printf ("RPC error: Server cannot handle method %s\n", txt);
-            reply_error (conn, id, S16ENOSUCHMETH,
-                         "Server cannot handle method", NULL);
+            reply_error (
+                conn, id, S16ENOSUCHMETH, "Server cannot handle method", NULL);
             goto cleanup;
         }
 
@@ -252,7 +259,9 @@ void handle_msg (s16rpc_srv_t * srv, s16rpc_conn_t * conn)
         {
             printf ("RPC error: Parameter count mismatch for method %s "
                     "(expected %ld, got %ld)\n",
-                    txt, cand->nparams, nparams);
+                    txt,
+                    cand->nparams,
+                    nparams);
             reply_error (conn, id, 1, "Incorrect parameter count", NULL);
             goto cleanup;
         }
@@ -447,7 +456,8 @@ ucl_object_t * recv_reply (int fd, s16rpc_error_t * rerror)
         const ucl_object_t *code = ucl_object_lookup (error, "code"),
                            *message = ucl_object_lookup (error, "message"),
                            *data = ucl_object_lookup (error, "data");
-        printf ("RPC Error: code %ld, message %s\n", ucl_object_toint (code),
+        printf ("RPC Error: code %ld, message %s\n",
+                ucl_object_toint (code),
                 ucl_object_tostring (message));
         rerror->code = ucl_object_toint (code);
         rerror->message =
@@ -486,10 +496,10 @@ ucl_object_t * s16rpc_i_clnt_call_arr (s16rpc_clnt_t * clnt,
 {
     ucl_object_t * msg = ucl_object_typed_new (UCL_OBJECT);
 
-    ucl_object_insert_key (msg, ucl_object_fromstring (S16_JSONRPC_VERSION),
-                           "jsonrpc", 0, 1);
-    ucl_object_insert_key (msg, ucl_object_fromstring (meth_name), "method", 0,
-                           1);
+    ucl_object_insert_key (
+        msg, ucl_object_fromstring (S16_JSONRPC_VERSION), "jsonrpc", 0, 1);
+    ucl_object_insert_key (
+        msg, ucl_object_fromstring (meth_name), "method", 0, 1);
     ucl_object_insert_key (msg, params, "params", 0, 1);
 
     write_object (clnt->fd, msg);

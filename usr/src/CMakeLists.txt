@@ -66,7 +66,7 @@ endif()
 find_package(Java COMPONENTS Development)
 find_package(JNI)
 
-include_directories("${PROJECT_SOURCE_DIR}/hdr")
+include_directories("${CMAKE_SOURCE_DIR}/hdr")
 include_directories("${CMAKE_SOURCE_DIR}")
 
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
@@ -103,6 +103,8 @@ if(S16_ENABLE_TESTS)
   installTopKyuafile(agent)
   installTopKyuafile(cmd)
 endif()
+
+set(hdrRoot "${CMAKE_SOURCE_DIR}/hdr")
 
 # Build external first
 add_subdirectory(vendor/lemon)

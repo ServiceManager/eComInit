@@ -26,17 +26,19 @@
 #ifndef PBUS_H_
 #define PBUS_H_
 
-#include "s16list.h"
-#include "s16newrpc.h"
-
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
+#include "s16list.h"
+#include "s16newrpc.h"
+
+    typedef struct PBusMethod PBusMethod;
     typedef struct PBusObject PBusObject;
     typedef struct PBusClass PBusClass;
     typedef struct PBusInvocationContext PBusInvocationContext;
+    typedef struct PBusServer PBusServer;
 
     S16List (PBusObject, PBusObject *);
     S16List (PBusPathElement, char *);
@@ -66,42 +68,43 @@ extern "C"
                                       PBusInvocationContext * ctx,
                                       nvlist_t * params);
 
-    typedef struct PBusMethod
+    struct PBusMethod
     {
-        s16r_message_signature * sig;
-        PBusFun fun;
-    } PBusMethod;
+        s16r_message_signature * messageSignature;
+        PBusFun fnImplementation;
+    };
 
     struct PBusClass
     {
         ResolveSubObjectFun fnResolveSubObject;
         DispatchMessageFun fnDispatchMessage;
 
-        PBusMethod * (*aMethods)[]; /* terminated .name = NULL */
+        PBusMethod * (*methods)[]; /* terminated .name = NULL */
     };
 
     struct PBusObject
     {
-        PBusClass * aIsA;
-        char * aName; /* NULL if root object */
-        void * aData;
+        PBusClass * isA;
+        char * name; /* NULL if root object */
+        void * data;
 
-        PBusObject_list_t aSubObjects;
+        PBusObject_list_t subObjects;
     };
 
-    typedef struct PBusServer
+    struct PBusInvocationContext
     {
-        s16r_srv_t * aS16RServer;
-        PBusObject * aRootObject;
-    } PBusServer;
+        const char * fromBusname;  /* NULL if direct */
+        const char * fullSelfPath; /* Full object path of self */
+        const char * selfPath;     /* Last component of object path of self */
+        void * user;               /* User data set by custom resolveFun */
+        const char * selector;     /* Message selector */
+    };
 
-    typedef struct PBusInvocationContext
+    struct PBusServer
     {
-        const char * fromBusname; /* NULL if direct */
-        const char * selfPath;    /* Object path of self */
-        void * user; /* User data (FIXME: set by custom resolveFun?) */
-        const char * selector; /* Message selector */
-    } PBusInvocationContext;
+        s16r_srv_t * rpcServer;
+        PBusObject * rootObject;
+    };
 
     /*
      * Creates a new PBusServer with @rootObject as its root object.
@@ -126,8 +129,6 @@ extern "C"
      * Adds a PBusObject @obj as a subobject of @parent
      */
     void PBusObjectAddSubObject (PBusObject * obj, PBusObject * subObj);
-
-    void testIt ();
 
 #ifdef __cplusplus
 }

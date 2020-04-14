@@ -1,15 +1,17 @@
 project (LibPBus)
 
+set(hdrSub "PBus")
+set(hdrPath ${hdrRoot}/${hdrSub})
+
 add_library (PBus_priv INTERFACE)
 target_include_directories(PBus_priv INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library (PBus SHARED PBus.c)
 target_link_libraries (PBus s16 s16systemd)
-target_include_directories(PBus PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/hdr)
-
+target_include_directories(PBus PUBLIC ${hdrPath})
 
 set(PBUS_HEADERS
-    hdr/PBus.h
+    ${hdrPath}/PBus.h
   )
 
 set_target_properties(PBus PROPERTIES
@@ -17,7 +19,7 @@ set_target_properties(PBus PROPERTIES
     )
 
 install(TARGETS PBus DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        PUBLIC_HEADER DESTINATION include
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${hdrSub}/
         )
 
 if (S16_ENABLE_TESTS)

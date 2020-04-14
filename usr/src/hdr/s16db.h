@@ -46,7 +46,6 @@ extern "C"
 
 #define S16DB_CONFIGD_SOCKET_PATH "/var/tmp/configd"
 
-    typedef struct ucl_object_s ucl_object_t;
     typedef struct s16note_sub_s s16note_sub_t;
 
     typedef enum s16db_errcode_e
@@ -128,7 +127,7 @@ extern "C"
      * These directly interface with the repository.
      **********************************************************/
     /* Imports a UCL-form service into the given layer. */
-    int s16db_import_ucl_svc (s16db_hdl_t * hdl, ucl_object_t * usvc,
+    int s16db_import_ucl_svc (s16db_hdl_t * hdl, struct ucl_object_s * usvc,
                               s16db_layer_t layer);
     /* Gets the state for the given instance path. */
     svc_state_t s16db_get_state (s16db_hdl_t * hdl, path_t * path);
@@ -168,21 +167,21 @@ extern "C"
     /* UCL to internal: */
     /* Converts a string path to a path. */
     path_t * s16db_string_to_path (const char * txt);
-    path_t * s16db_ucl_to_path (const ucl_object_t * upath);
+    path_t * s16db_ucl_to_path (const struct ucl_object_s * upath);
     /* Converts a UCL instance to an instance */
-    svc_instance_t * s16db_ucl_to_inst (const ucl_object_t * obj);
+    svc_instance_t * s16db_ucl_to_inst (const struct ucl_object_s * obj);
     /* Converts a UCL manifest to a service. */
-    svc_t * s16db_ucl_to_svc (const ucl_object_t * obj);
+    svc_t * s16db_ucl_to_svc (const struct ucl_object_s * obj);
     /* Converts a UCL service array to a service list. */
-    svc_list_t s16db_ucl_to_svcs (const ucl_object_t * usvcs);
+    svc_list_t s16db_ucl_to_svcs (const struct ucl_object_s * usvcs);
     /* Converts a UCL notification to an S16 notification. */
-    s16note_t * s16db_ucl_to_note (const ucl_object_t * unote);
+    s16note_t * s16db_ucl_to_note (const struct ucl_object_s * unote);
 
     /* Internal to UCL: */
-    ucl_object_t * s16db_path_to_ucl (path_t * path);
-    ucl_object_t * s16db_inst_to_ucl (svc_instance_t * path);
-    ucl_object_t * s16db_svc_to_ucl (svc_t * svc);
-    ucl_object_t * s16db_note_to_ucl (const s16note_t * note);
+    struct ucl_object_s * s16db_path_to_ucl (path_t * path);
+    struct ucl_object_s * s16db_inst_to_ucl (svc_instance_t * path);
+    struct ucl_object_s * s16db_svc_to_ucl (svc_t * svc);
+    struct ucl_object_s * s16db_note_to_ucl (const s16note_t * note);
 
 #ifdef __cplusplus
 }
