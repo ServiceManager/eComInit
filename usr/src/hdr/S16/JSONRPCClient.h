@@ -26,7 +26,7 @@
 #ifndef S16CLNT_H_
 #define S16CLNT_H_
 
-#include "s16rpc.h"
+#include "S16/JSONRPC.h"
 
 #ifdef __cplusplus
 extern "C"

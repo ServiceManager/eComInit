@@ -28,8 +28,8 @@
 
 #include <sys/types.h>
 
-#include "s16list.h"
-#include "s16newrpc.h"
+#include "S16/List.h"
+#include "S16/NVRPC.h"
 
 #ifdef __cplusplus
 extern "C"

@@ -33,8 +33,8 @@
 #include <unistd.h>
 
 #include "nv.h"
-#include "s16.h"
-#include "s16newrpc.h"
+#include "S16/Service.h"
+#include "S16/NVRPC.h"
 #include "systemd/sd-daemon.h"
 
 #include "PBusBroker.h"

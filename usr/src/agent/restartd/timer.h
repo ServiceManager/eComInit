@@ -26,7 +26,7 @@
 #ifndef TIMER___H___
 #define TIMER___H___
 
-#include "s16list.h"
+#include "S16/List.h"
 
 typedef struct tstimer_s
 {

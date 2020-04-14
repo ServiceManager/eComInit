@@ -1,6 +1,9 @@
 project (s16)
 
-configure_file (${CMAKE_SOURCE_DIR}/hdr/s16compat-tpl.h ${PROJECT_BINARY_DIR}/s16compat.h)
+set(hdrSub "S16")
+set(hdrPath ${hdrRoot}/${hdrSub})
+
+configure_file (${hdrPath}/PlatformDefinitions-tpl.h ${PROJECT_BINARY_DIR}/S16/PlatformDefinitions.h)
 
 if (FREEBSD OR NETBSD OR OPENBSD OR DRAGONFLY)
   set (PT_DRIVER "kevent")
@@ -31,10 +34,10 @@ target_include_directories(s16 PUBLIC
 
 set(S16_HEADERS
   ${PROJECT_BINARY_DIR}/s16compat.h
-  ${CMAKE_SOURCE_DIR}/hdr/s16.h
-  ${CMAKE_SOURCE_DIR}/hdr/s16list.h
-  ${CMAKE_SOURCE_DIR}/hdr/s16db.h
-  ${CMAKE_SOURCE_DIR}/hdr/s16db_priv.h
+  ${hdrPath}/s16.h
+  ${hdrPath}/s16list.h
+  ${hdrPath}/s16db.h
+  ${hdrPath}/s16db_priv.h
   )
 
 set_target_properties(s16 PROPERTIES

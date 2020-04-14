@@ -27,7 +27,7 @@
 
 #include "PBus.h"
 #include "PBus_priv.h"
-#include "s16newrpc.h"
+#include "S16/NVRPC.h"
 
 typedef void * (*PB0ParamFun) (PBusObject *, PBusInvocationContext *);
 typedef void * (*PB1ParamFun) (PBusObject *, PBusInvocationContext *,

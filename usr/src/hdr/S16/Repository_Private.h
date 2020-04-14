@@ -31,7 +31,7 @@
 #ifndef S16_DB_PRIV_H_
 #define S16_DB_PRIV_H_
 
-#include "s16db.h"
+#include "S16/Repository.h"
 
 #ifdef __cplusplus
 extern "C"

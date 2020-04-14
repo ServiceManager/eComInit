@@ -31,8 +31,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "s16clnt.h"
-#include "s16srv.h"
+#include "S16/JSONRPCClient.h"
+#include "S16/JSONRPCServer.h"
 
 #define S16_JSONRPC_VERSION "2.0"
 

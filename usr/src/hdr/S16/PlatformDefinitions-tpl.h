@@ -23,31 +23,19 @@
  * Use is subject to license terms.
  */
 
-#ifndef S16RPC_H_
-#define S16RPC_H_
-
-#include "s16.h"
-#include "ucl.h"
+#ifndef S16_COMPAT_H_
+#define S16_COMPAT_H_
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-    /* S16 RPC Error code */
-    typedef enum
-    {
-        S16ENOSUCHMETH = 5000,
-    } s16rpc_errcode_t;
+#define S16_PREFIX "@CMAKE_INSTALL_PREFIX@"
+#define S16_LIBEXECDIR S16_PREFIX "/@CMAKE_INSTALL_LIBEXECDIR@"
 
-    typedef struct
-    {
-        s16rpc_errcode_t code;
-        char * message;
-        ucl_object_t * data;
-    } s16rpc_error_t;
-
-    void s16rpc_error_destroy (s16rpc_error_t * rerr);
+#cmakedefine S16_PLAT_BSD
+#cmakedefine S16_ENABLE_SD_NOTIFY
 
 #ifdef __cplusplus
 }

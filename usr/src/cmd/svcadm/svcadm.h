@@ -26,7 +26,7 @@
 #ifndef SVCADM_H_
 #define SVCADM_H_
 
-#include "s16db.h"
+#include "S16/Repository.h"
 
 struct svcadm_s
 {

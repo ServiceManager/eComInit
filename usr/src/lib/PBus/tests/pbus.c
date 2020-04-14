@@ -27,7 +27,7 @@
 
 #include "PBus.h"
 #include "PBus_priv.h"
-#include "s16newrpc.h"
+#include "S16/NVRPC.h"
 
 s16r_message_signature testMethSig = {
     .name = "TestMeth",

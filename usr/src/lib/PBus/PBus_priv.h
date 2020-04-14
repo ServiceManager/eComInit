@@ -26,7 +26,7 @@
 #ifndef PBUSPRIV_H_
 #define PBUSPRIV_H_
 
-#include "s16newrpc.h"
+#include "S16/NVRPC.h"
 
 #ifdef __cplusplus
 extern "C"

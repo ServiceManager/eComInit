@@ -40,9 +40,9 @@
 #include <sys/prctl.h>
 #endif
 
-#include "s16rr.h"
+#include "S16/RestarterServices.h"
 
-/* It is forbidden to include s16.h in this file.
+/* It is forbidden to include Service.h in this file.
  * Doing so leads to a FreeBSD-internal header conflict! */
 void * s16mem_alloc (unsigned long);
 void s16mem_free (void *);

@@ -32,7 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "s16.h"
+#include "S16/Service.h"
 
 /* State functions */
 const char * s16_state_to_string (svc_state_t state)

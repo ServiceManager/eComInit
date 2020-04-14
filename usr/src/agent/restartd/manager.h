@@ -26,9 +26,9 @@
 #ifndef MANAGER_H_
 #define MANAGER_H_
 
-#include "s16db.h"
-#include "s16note.h"
-#include "s16rr.h"
+#include "S16/Repository.h"
+#include "S16/ServiceNotification.h"
+#include "S16/RestarterServices.h"
 
 #include "timer.h"
 #include "unit.h"

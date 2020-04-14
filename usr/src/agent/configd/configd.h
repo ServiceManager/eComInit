@@ -26,7 +26,7 @@
 #ifndef REPOSITORYD_H_
 #define REPOSITORYD_H_
 
-#include "s16db.h"
+#include "S16/Repository.h"
 
 typedef struct
 {
