@@ -26,8 +26,8 @@
 #ifndef UNIT_H_
 #define UNIT_H_
 
-#include "s16db.h"
-#include "s16rr.h"
+#include "S16/Repository.h"
+#include "S16/RestarterServices.h"
 
 typedef enum
 {

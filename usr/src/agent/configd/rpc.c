@@ -29,9 +29,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "s16clnt.h"
-#include "s16db.h"
-#include "s16srv.h"
+#include "S16/JSONRPCClient.h"
+#include "S16/Repository.h"
+#include "S16/JSONRPCServer.h"
 
 #include "configd.h"
 

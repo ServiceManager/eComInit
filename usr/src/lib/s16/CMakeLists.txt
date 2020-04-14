@@ -1,6 +1,9 @@
 project (s16)
 
-configure_file (${CMAKE_SOURCE_DIR}/hdr/s16compat-tpl.h ${PROJECT_BINARY_DIR}/s16compat.h)
+set(hdrSub "S16")
+set(hdrPath ${PROJECT_SOURCE_DIR}/hdr/${hdrSub})
+
+configure_file (${hdrPath}/PlatformDefinitions-tpl.h ${PROJECT_BINARY_DIR}/S16/PlatformDefinitions.h)
 
 if (FREEBSD OR NETBSD OR OPENBSD OR DRAGONFLY)
   set (PT_DRIVER "kevent")
@@ -9,7 +12,6 @@ elseif (LINUX)
 elseif (POSIX)
   set (PT_DRIVER "posix")
 endif()
-
 
 add_library (s16 SHARED 
   mem.c misc.c s16.c 
@@ -27,14 +29,15 @@ endif()
 
 target_link_libraries (s16 ucl uthash nvp Kqueue::Kqueue m)
 target_include_directories(s16 PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/hdr>)
 
 set(S16_HEADERS
-  ${PROJECT_BINARY_DIR}/s16compat.h
-  ${CMAKE_SOURCE_DIR}/hdr/s16.h
-  ${CMAKE_SOURCE_DIR}/hdr/s16list.h
-  ${CMAKE_SOURCE_DIR}/hdr/s16db.h
-  ${CMAKE_SOURCE_DIR}/hdr/s16db_priv.h
+  ${PROJECT_BINARY_DIR}/${hdrSub}/PlatformDefinitions.h
+  ${hdrPath}/Core.h
+  ${hdrPath}/List.h
+  ${hdrPath}/Service.h
+  ${hdrPath}/Repository.h
   )
 
 set_target_properties(s16 PROPERTIES
@@ -42,7 +45,7 @@ set_target_properties(s16 PROPERTIES
     )
 
 install(TARGETS s16 DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        PUBLIC_HEADER DESTINATION include
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${hdrSub}
         )
 
 if (S16_ENABLE_TESTS)

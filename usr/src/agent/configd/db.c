@@ -48,7 +48,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "s16db_priv.h"
+#include "S16/Repository_Private.h"
 
 #include "configd.h"
 

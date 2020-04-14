@@ -31,7 +31,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-#include "s16db_priv.h"
+#include "S16/Repository_Private.h"
 
 int s16db_hdl_new (s16db_hdl_t * hdl)
 {

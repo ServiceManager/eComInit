@@ -23,8 +23,8 @@
  * Use is subject to license terms.
  */
 
-#ifndef S16_H_
-#define S16_H_
+#ifndef S16_CORE_H_
+#define S16_CORE_H_
 
 #ifdef __cplusplus
 extern "C"
@@ -36,18 +36,9 @@ extern "C"
 #include <stdint.h>
 #include <time.h>
 
-#include "s16compat.h"
-#include "s16list.h"
+#include "S16/Core.h"
 
 #define S16_CONFIGD_BINARY S16_LIBEXECDIR "/s16.configd"
-
-#ifndef S16_MEM_
-#define S16_MEM_
-    void * s16mem_alloc (unsigned long nbytes);
-    void * s16mem_calloc (size_t cnt, unsigned long nbytes);
-    char * s16mem_strdup (const char * str);
-    void s16mem_free (void * ap);
-#endif
 
     typedef enum svc_state_e
     {
@@ -61,12 +52,12 @@ extern "C"
         S_MAX,
     } svc_state_t;
 
-    typedef struct path_s
+    struct path_s
     {
         bool full_qual;
         char * svc;
         char * inst;
-    } path_t;
+    };
 
     S16List (path, path_t *);
 
@@ -127,7 +118,7 @@ extern "C"
 
     S16List (meth, method_t *);
 
-    typedef struct svc_instance_s
+    struct svc_instance_s
     {
         path_t * path;
 
@@ -137,11 +128,11 @@ extern "C"
 
         bool enabled;
         svc_state_t state;
-    } svc_instance_t;
+    };
 
     S16List (inst, svc_instance_t *);
 
-    typedef struct svc_s
+    struct svc_s
     {
         /* Each service has a path. */
         path_t * path;
@@ -159,7 +150,7 @@ extern "C"
 
         /* and finally, a state. */
         svc_state_t state;
-    } svc_t;
+    };
 
     S16List (svc, svc_t *);
 
@@ -232,37 +223,6 @@ extern "C"
     void s16_svc_destroy (svc_t * svc);
     /* Returns true if b's name matches that of a. */
     bool s16_svc_name_equal (const svc_t * a, const svc_t * b);
-
-    /* Logging functionality */
-    /* Log level: At which level of verbosity should this be emitted? */
-    typedef enum
-    {
-        DBG,
-        INFO,
-        WARN,
-        ERR,
-    } s16_log_level_t;
-
-    /* Initialises the log system.
-     * name: Name of your program. */
-    void s16_log_init (const char * name);
-
-    void s16_log (s16_log_level_t level, const char * fmt, ...);
-    void s16_log_path (s16_log_level_t level, const path_t * path,
-                       const char * fmt, ...);
-    void s16_log_svc (s16_log_level_t level, const svc_t * svc,
-                      const char * fmt, ...);
-    void s16_log_inst (s16_log_level_t level, const svc_instance_t * inst,
-                       const char * fmt, ...);
-
-    /* Misc functionality */
-    /* Set FD_CLOEXEC on some FD, preserving old flags. */
-    void s16_cloexec (int fd);
-    /*
-     * Handle a signal with a Kernel Queue. You must check for EVFILT_SIGNAL in
-     * your event loop.
-     */
-    void s16_handle_signal (int kq, int sig);
 
 #ifdef __cplusplus
 }

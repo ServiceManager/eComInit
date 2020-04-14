@@ -30,7 +30,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-#include "s16db_priv.h"
+#include "S16/Repository_Private.h"
 
 void add_param (ucl_object_t * msg, const char * name, ucl_object_t * value)
 {

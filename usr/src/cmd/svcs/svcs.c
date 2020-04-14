@@ -23,7 +23,7 @@
  * Use is subject to license terms.
  */
 
-#include "s16db.h"
+#include "S16/Repository.h"
 
 struct svcs_s
 {

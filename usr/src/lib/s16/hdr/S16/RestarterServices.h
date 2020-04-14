@@ -26,7 +26,7 @@
 #ifndef S16_RR_H_
 #define S16_RR_H_
 
-#include "s16list.h"
+#include "S16/List.h"
 
 #include <sys/event.h>
 #include <sys/types.h>

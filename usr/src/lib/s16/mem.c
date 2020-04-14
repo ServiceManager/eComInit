@@ -33,7 +33,7 @@
  * This code is adapted from memmgr by Eli Bendersky, who had released
  * it into the public domain */
 
-#include "s16.h"
+#include "S16/Service.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

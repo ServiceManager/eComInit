@@ -25,7 +25,7 @@
 
 #include <atf-c.h>
 
-#include "s16db.h"
+#include "S16/Repository.h"
 
 svc_t make_svc () {}
 

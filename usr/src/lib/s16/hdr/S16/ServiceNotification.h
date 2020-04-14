@@ -34,7 +34,7 @@
 #ifndef S16_NOTE_H_
 #define S16_NOTE_H_
 
-#include "s16.h"
+#include "S16/Service.h"
 
 #ifdef __cplusplus
 extern "C"

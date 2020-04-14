@@ -35,9 +35,9 @@
 
 #include "systemd/sd-daemon.h"
 
-#include "s16clnt.h"
-#include "s16db_priv.h"
-#include "s16srv.h"
+#include "S16/JSONRPCClient.h"
+#include "S16/Repository_Private.h"
+#include "S16/JSONRPCServer.h"
 
 #include "configd.h"
 

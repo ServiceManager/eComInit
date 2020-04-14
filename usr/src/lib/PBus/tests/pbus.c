@@ -25,9 +25,10 @@
 
 #include <atf-c.h>
 
-#include "PBus.h"
+#include "S16/NVRPC.h"
+
+#include "PBus/PBus.h"
 #include "PBus_priv.h"
-#include "s16newrpc.h"
 
 s16r_message_signature testMethSig = {
     .name = "TestMeth",

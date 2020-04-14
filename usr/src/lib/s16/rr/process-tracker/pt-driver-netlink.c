@@ -43,8 +43,8 @@
 #include <sys/uio.h>
 #include <unistd.h>
 
-#include "s16list.h"
-#include "s16rr.h"
+#include "S16/List.h"
+#include "S16/RestarterServices.h"
 
 void * s16mem_alloc (unsigned long);
 void s16mem_free (void *);

@@ -63,8 +63,8 @@
 #endif
 
 #include "manager.h"
-#include "s16db.h"
-#include "s16rr.h"
+#include "S16/Repository.h"
+#include "S16/RestarterServices.h"
 
 static int sd_notify_fd;
 

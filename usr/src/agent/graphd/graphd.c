@@ -32,7 +32,7 @@
 #include <unistd.h>
 
 #include "graphd.h"
-#include "s16db.h"
+#include "S16/Repository.h"
 
 int kq;
 

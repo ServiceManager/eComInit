@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "s16db.h"
+#include "S16/Repository.h"
 #include "ucl.h"
 
 #define UclFromStr ucl_object_fromstring

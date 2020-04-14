@@ -66,8 +66,8 @@
 #endif
 
 #include "manager.h"
-#include "s16db.h"
-#include "s16rr.h"
+#include "S16/Repository.h"
+#include "S16/RestarterServices.h"
 
 const int NOTE_RREQ = 18;
 

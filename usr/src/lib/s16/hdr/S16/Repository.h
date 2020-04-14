@@ -35,9 +35,9 @@
 
 #include <string.h>
 
-#include "s16clnt.h"
-#include "s16note.h"
-#include "s16srv.h"
+#include "S16/JSONRPCClient.h"
+#include "S16/ServiceNotification.h"
+#include "S16/JSONRPCServer.h"
 
 #ifdef __cplusplus
 extern "C"

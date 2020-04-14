@@ -34,8 +34,8 @@
 #include <unistd.h>
 
 #include "nv.h"
-#include "s16list.h"
-#include "s16newrpc.h"
+#include "S16/List.h"
+#include "S16/NVRPC.h"
 #include "ucl.h"
 
 S16List (void, void *);
