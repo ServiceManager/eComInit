@@ -52,7 +52,7 @@ ucl_object_t * handle_notify (s16rpc_data_t * dat, const ucl_object_t * unote)
 {
     s16note_t * note = s16db_ucl_to_note (unote);
     printf ("Got a note: %s, %d, %d, %d\n",
-            s16_path_to_string (note->path),
+            S16PathToString (note->path),
             note->note_type,
             note->type,
             note->reason);
@@ -77,10 +77,10 @@ void s16db_subscribe (s16db_hdl_t * hdl, int kq, int /* s16note_type_t */ kinds)
 
     if (!reply)
     {
-        s16_log (ERR,
-                 "Failed to send subscribe message: code %d: %s\n",
-                 rerr.code,
-                 rerr.message);
+        S16Log (kS16LogError,
+                "Failed to send subscribe message: code %d: %s\n",
+                rerr.code,
+                rerr.message);
         s16rpc_error_destroy (&rerr);
     }
     else
@@ -101,10 +101,10 @@ void s16db_publish (s16db_hdl_t * hdl, s16note_t * note)
 
     if (!reply)
     {
-        s16_log (ERR,
-                 "Failed to send publish message: code %d: %s\n",
-                 rerr.code,
-                 rerr.message);
+        S16Log (kS16LogError,
+                "Failed to send publish message: code %d: %s\n",
+                rerr.code,
+                rerr.message);
         s16rpc_error_destroy (&rerr);
     }
     else
@@ -116,10 +116,10 @@ void s16db_publish (s16db_hdl_t * hdl, s16note_t * note)
 /* Disables the given path. If path is an instance, disables that instance;
  * if path is a service, disables all its instances. */
 #define DIS_OR_EN_FUN(MODE_)                                                   \
-    int s16db_##MODE_ (s16db_hdl_t * hdl, path_t * path)                       \
+    int s16db_##MODE_ (s16db_hdl_t * hdl, S16Path * path)                      \
     {                                                                          \
         s16rpc_error_t rerr;                                                   \
-        ucl_object_t * upath = s16db_path_to_ucl (path);                       \
+        ucl_object_t * upath = s16db_S16Patho_ucl (path);                      \
         ucl_object_t * reply;                                                  \
         int errc;                                                              \
                                                                                \
@@ -128,11 +128,11 @@ void s16db_publish (s16db_hdl_t * hdl, s16note_t * note)
                                                                                \
         if (!reply)                                                            \
         {                                                                      \
-            s16_log (ERR,                                                      \
-                     "Failed to send %s message: code %d: %s\n",               \
-                     #MODE_,                                                   \
-                     rerr.code,                                                \
-                     rerr.message);                                            \
+            S16Log (kS16LogError,                                              \
+                    "Failed to send %s message: code %d: %s\n",                \
+                    #MODE_,                                                    \
+                    rerr.code,                                                 \
+                    rerr.message);                                             \
             errc = rerr.code;                                                  \
             s16rpc_error_destroy (&rerr);                                      \
         }                                                                      \
@@ -148,10 +148,10 @@ void s16db_publish (s16db_hdl_t * hdl, s16note_t * note)
 DIS_OR_EN_FUN (disable);
 DIS_OR_EN_FUN (enable);
 
-int s16db_set_state (s16db_hdl_t * hdl, path_t * path, svc_state_t state)
+int s16db_set_state (s16db_hdl_t * hdl, S16Path * path, S16ServiceState state)
 {
     s16rpc_error_t rerr;
-    ucl_object_t * upath = s16db_path_to_ucl (path);
+    ucl_object_t * upath = s16db_S16Patho_ucl (path);
     ucl_object_t * ustate = ucl_object_fromint (state);
     ucl_object_t * reply;
     int errc;
@@ -162,10 +162,10 @@ int s16db_set_state (s16db_hdl_t * hdl, path_t * path, svc_state_t state)
 
     if (!reply)
     {
-        s16_log (ERR,
-                 "Failed to send set-state message: code %d: %s\n",
-                 rerr.code,
-                 rerr.message);
+        S16Log (kS16LogError,
+                "Failed to send set-state message: code %d: %s\n",
+                rerr.code,
+                rerr.message);
         s16rpc_error_destroy (&rerr);
         errc = rerr.code;
     }
@@ -188,10 +188,10 @@ svc_list_t s16db_repo_get_all_services_merged (s16db_hdl_t * hdl)
 
     if (!reply)
     {
-        s16_log (ERR,
-                 "Failed to send get-all-services message: code %d: %s\n",
-                 rerr.code,
-                 rerr.message);
+        S16Log (kS16LogError,
+                "Failed to send get-all-services message: code %d: %s\n",
+                rerr.code,
+                rerr.message);
         s16rpc_error_destroy (&rerr);
     }
     else
@@ -204,11 +204,11 @@ svc_list_t s16db_repo_get_all_services_merged (s16db_hdl_t * hdl)
 }
 
 s16db_lookup_result_t s16db_repo_get_path_merged (s16db_hdl_t * hdl,
-                                                  path_t * path)
+                                                  S16Path * path)
 {
     s16rpc_error_t rerr;
     s16db_lookup_result_t res;
-    ucl_object_t * upath = s16db_path_to_ucl (path);
+    ucl_object_t * upath = s16db_S16Patho_ucl (path);
     /* reply */
     ucl_object_t * reply = NULL;
     /* reply elements */
@@ -220,10 +220,10 @@ s16db_lookup_result_t s16db_repo_get_path_merged (s16db_hdl_t * hdl,
     if (!reply)
     {
         res.type = rerr.code;
-        s16_log (ERR,
-                 "Failed to send get-path-merged message: code %d: %s\n",
-                 rerr.code,
-                 rerr.message);
+        S16Log (kS16LogError,
+                "Failed to send get-path-merged message: code %d: %s\n",
+                rerr.code,
+                rerr.message);
         s16rpc_error_destroy (&rerr);
     }
     else
@@ -269,10 +269,10 @@ int s16db_import_ucl_svc (s16db_hdl_t * hdl, ucl_object_t * usvc,
     if (!reply)
     {
         e = rerr.code;
-        s16_log (ERR,
-                 "Failed to send import-service message: code %d: %s",
-                 rerr.code,
-                 rerr.message);
+        S16Log (kS16LogError,
+                "Failed to send import-service message: code %d: %s",
+                rerr.code,
+                rerr.message);
         s16rpc_error_destroy (&rerr);
     }
     else

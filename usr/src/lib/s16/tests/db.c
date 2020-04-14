@@ -27,7 +27,7 @@
 
 #include "S16/Repository.h"
 
-svc_t make_svc () {}
+S16Service make_svc () {}
 
 ATF_TC (convert_svc);
 ATF_TC_HEAD (convert_svc, tc)
@@ -59,31 +59,33 @@ ATF_TC_BODY (convert_svc, tc)
         "\"grouping\":\"optional-all\",\"restart-on\":\"refresh\",\"paths\":["
         "\"svc:/dep:depinst\"]}],\"state\":0}";
 
-    depgroup_t dg = {
+    S16DependencyGroup dg = {
         .name = "dg",
-        .type = OPTIONAL_ALL,
-        .restart_on = ON_REFRESH,
-        .paths = *path_list_add (&paths, s16_path_new ("dep", "depinst"))};
+        .type = kS16OptionalAll,
+        .restart_on = kS16RestartOnRefresh,
+        .paths = *path_list_add (&paths, S16PathNew ("dep", "depinst"))};
 
-    property_t prop = {
+    S16Property prop = {
         .name = "prop", .type = PROP_STRING, .value.s = "propval"};
 
-    method_t meth = {.name = "meth", .props = *prop_list_add (&props, &prop)};
+    S16ServiceMethod meth = {.name = "meth",
+                             .props = *prop_list_add (&props, &prop)};
 
-    svc_instance_t inst = {.path = s16_path_new ("ex", "inst"),
-                           .props = props,
-                           .meths = *meth_list_add (&meths, &meth),
-                           .depgroups = *depgroup_list_add (&depgroups, &dg),
-                           .state = S_MAINTENANCE};
+    S16ServiceInstance inst = {.path = S16PathNew ("ex", "inst"),
+                               .props = props,
+                               .meths = *meth_list_add (&meths, &meth),
+                               .depgroups =
+                                   *depgroup_list_add (&depgroups, &dg),
+                               .state = kS16StateMaintenance};
 
-    svc_t svc = {.path = s16_path_new ("ex", NULL),
-                 .def_inst = "notdefault",
-                 .props = props,
-                 .meths = meths,
-                 .insts = *inst_list_add (&insts, &inst),
-                 .depgroups = depgroups};
+    S16Service svc = {.path = S16PathNew ("ex", NULL),
+                      .def_inst = "notdefault",
+                      .props = props,
+                      .meths = meths,
+                      .insts = *inst_list_add (&insts, &inst),
+                      .depgroups = depgroups};
 
-    char * converted = (char *)ucl_object_emit (s16db_svc_to_ucl (&svc),
+    char * converted = (char *)ucl_object_emit (s16db_S16Serviceo_ucl (&svc),
                                                 UCL_EMIT_JSON_COMPACT);
 
     ATF_CHECK_STREQ (converted, correct);

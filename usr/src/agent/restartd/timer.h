@@ -35,7 +35,7 @@ typedef struct tstimer_s
     void (*cb) (long, void *);
 } tstimer_t;
 
-S16List (tstimer, tstimer_t *);
+S16ListType (tstimer, tstimer_t *);
 
 typedef struct timerset_s
 {

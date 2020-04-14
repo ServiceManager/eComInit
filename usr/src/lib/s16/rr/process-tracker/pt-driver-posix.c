@@ -35,8 +35,8 @@
 #include <sys/event.h>
 #include <sys/types.h>
 
-#include "list.h"
 #include "S16/RestarterServices.h"
+#include "list.h"
 
 ListGenForNameType (pid, pid_t);
 

@@ -59,7 +59,8 @@ s16db_scope_t manifest;
 /* User scope. */
 s16db_scope_t admin;
 
-int merge_depgroup_into_list (depgroup_t * depgroup, depgroup_list_t * list)
+int merge_depgroup_into_list (S16DependencyGroup * depgroup,
+                              depgroup_list_t * list)
 {
     depgroup_list_it cand =
         depgroup_list_find_cmp (list, s16_depgroup_name_equal, depgroup);
@@ -75,7 +76,7 @@ int merge_depgroup_into_list (depgroup_t * depgroup, depgroup_list_t * list)
     return 0;
 }
 
-int merge_prop_into_list (property_t * prop, prop_list_t * list)
+int merge_prop_into_list (S16Property * prop, prop_list_t * list)
 {
     prop_list_it cand = prop_list_find_cmp (list, s16_prop_name_equal, prop);
 
@@ -90,7 +91,7 @@ int merge_prop_into_list (property_t * prop, prop_list_t * list)
     return 0;
 }
 
-int merge_meth_into_list (method_t * meth, meth_list_t * list)
+int merge_meth_into_list (S16ServiceMethod * meth, meth_list_t * list)
 {
     meth_list_it cand = meth_list_find_cmp (list, s16_meth_name_equal, meth);
 
@@ -105,7 +106,7 @@ int merge_meth_into_list (method_t * meth, meth_list_t * list)
     return 0;
 }
 
-void merge_inst_into_inst (svc_instance_t * to, svc_instance_t * from)
+void merge_inst_into_inst (S16ServiceInstance * to, S16ServiceInstance * from)
 {
     prop_list_walk (&from->props,
                     (prop_list_walk_fun)merge_prop_into_list,
@@ -118,7 +119,7 @@ void merge_inst_into_inst (svc_instance_t * to, svc_instance_t * from)
                         (void *)&to->depgroups);
 }
 
-int merge_inst_into_list (svc_instance_t * inst, inst_list_t * list)
+int merge_inst_into_list (S16ServiceInstance * inst, inst_list_t * list)
 {
     inst_list_it cand = inst_list_find_cmp (list, s16_inst_name_equal, inst);
 
@@ -132,7 +133,7 @@ int merge_inst_into_list (svc_instance_t * inst, inst_list_t * list)
     return 0;
 }
 
-void merge_svc_into_svc (svc_t * to, svc_t * from)
+void merge_svc_into_svc (S16Service * to, S16Service * from)
 {
     if (from->def_inst)
     {
@@ -151,9 +152,9 @@ void merge_svc_into_svc (svc_t * to, svc_t * from)
                         (void *)&to->depgroups);
 }
 
-int merge_svc_into_list (svc_t * svc, svc_list_t * svcs)
+int merge_svc_into_list (S16Service * svc, svc_list_t * svcs)
 {
-    svc_t * cand =
+    S16Service * cand =
         list_it_val (svc_list_find_cmp (svcs, s16_svc_name_equal, svc));
 
     if (!cand)
@@ -183,7 +184,7 @@ void db_setup ()
 }
 void db_destroy () { svc_list_deepdestroy (&manifest.svcs, s16_svc_destroy); }
 
-int db_set_enabled (path_t * path, bool enabled)
+int db_set_enabled (S16Path * path, bool enabled)
 {
     s16db_lookup_result_t lu = db_lookup_path_merged (path);
 
@@ -211,13 +212,13 @@ int db_set_enabled (path_t * path, bool enabled)
     return 0;
 }
 
-void db_import (s16db_layer_t layer, svc_t * svc)
+void db_import (s16db_layer_t layer, S16Service * svc)
 {
     svc_list_add (&manifest.svcs, svc);
     update_merged ();
 }
 
-s16db_lookup_result_t db_lookup_path_merged (path_t * path)
+s16db_lookup_result_t db_lookup_path_merged (S16Path * path)
 {
     s16db_lookup_result_t r = s16db_lookup_path_in_scope (manifest, path);
     return r;

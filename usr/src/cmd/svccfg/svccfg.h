@@ -28,7 +28,7 @@
 
 #include "S16/Repository.h"
 
-S16List (str, char *);
+S16ListType (str, char *);
 
 struct svccfg_s
 {

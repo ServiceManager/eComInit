@@ -44,53 +44,55 @@ ucl_object_t * ins_key_arr (ucl_object_t * obj, const char * key)
     return arr;
 }
 
-ucl_object_t * s16db_path_to_ucl (path_t * path)
+ucl_object_t * s16db_S16Patho_ucl (S16Path * path)
 {
-    char * spath = s16_path_to_string (path);
+    char * spath = S16PathToString (path);
     ucl_object_t * upath = ucl_object_fromstring (spath);
     free (spath);
     return upath;
 }
 
-const char * s16db_depgroup_type_to_string (int t)
+const char * s16db_S16DependencyGroupTypeo_string (int t)
 {
     /* clang-format off */
-    return t == REQUIRE_ALL ? "require-all"
-         : t == REQUIRE_ANY ? "require-any"
-         : t == OPTIONAL_ALL ? "optional-all"
-         : t == EXCLUDE_ALL ? "exclude-all"
+    return t == kS16RequireAll ? "require-all"
+         : t == kS16RequireAny ? "require-any"
+         : t == kS16OptionalAll ? "optional-all"
+         : t == kS16ExcludeAll ? "exclude-all"
          : "INVALID-TYPE";
     /* clang-format on */
 }
 
-const char * s16db_depgroup_restarton_to_string (int t)
+const char * s16db_S16DependencyGroupRestartOnConditiono_string (int t)
 {
     /* clang-format off */
-    return t == ON_NONE ? "none"
-         : t == ON_ERROR ? "error"
-         : t == ON_REFRESH ? "refresh"
-         : t == ON_RESTART ? "restart"
+    return t == kS16RestartOnNone ? "none"
+         : t == kS16RestartOnError ? "error"
+         : t == kS16RestartOnRefresh ? "refresh"
+         : t == kS16RestartOnRestart ? "restart"
          : "INVALID";
     /* clang-format on */
 }
 
-ucl_object_t * s16db_depgroup_to_ucl (depgroup_t * prop)
+ucl_object_t * s16db_S16DependencyGroupo_ucl (S16DependencyGroup * prop)
 {
     ucl_object_t * udep = ucl_object_typed_new (UCL_OBJECT);
-    ins_key (udep, "grouping", s16db_depgroup_type_to_string (prop->type));
-    ins_key (udep,
-             "restart-on",
-             s16db_depgroup_restarton_to_string (prop->restart_on));
+    ins_key (
+        udep, "grouping", s16db_S16DependencyGroupTypeo_string (prop->type));
+    ins_key (
+        udep,
+        "restart-on",
+        s16db_S16DependencyGroupRestartOnConditiono_string (prop->restart_on));
     ucl_object_t * paths = ins_key_arr (udep, "paths");
 
     for (path_list_it it = path_list_begin (&prop->paths); it != NULL;
          it = path_list_it_next (it))
-        ucl_array_append (paths, s16db_path_to_ucl (it->val));
+        ucl_array_append (paths, s16db_S16Patho_ucl (it->val));
 
     return udep;
 }
 
-ucl_object_t * s16db_prop_to_ucl (property_t * prop)
+ucl_object_t * s16db_prop_to_ucl (S16Property * prop)
 {
     ucl_object_t * uprop = ucl_object_typed_new (UCL_OBJECT);
     ins_key (uprop, "name", prop->name);
@@ -106,7 +108,7 @@ void u_add_props (ucl_object_t * obj, prop_list_t * props)
         ucl_array_append (arr, s16db_prop_to_ucl (it->val));
 }
 
-ucl_object_t * s16db_meth_to_ucl (method_t * meth)
+ucl_object_t * s16db_meth_to_ucl (S16ServiceMethod * meth)
 {
     ucl_object_t * umeth = ucl_object_typed_new (UCL_OBJECT);
     ins_key (umeth, "name", meth->name);
@@ -120,7 +122,7 @@ void u_add_depgroups (ucl_object_t * obj, depgroup_list_t * depgroups)
     ucl_object_t * arr = ins_key_arr (obj, "dependencies");
     for (depgroup_list_it it = depgroup_list_begin (depgroups); it != NULL;
          it = depgroup_list_it_next (it))
-        ucl_array_append (arr, s16db_depgroup_to_ucl (it->val));
+        ucl_array_append (arr, s16db_S16DependencyGroupo_ucl (it->val));
 }
 
 void u_add_meths (ucl_object_t * obj, meth_list_t * meths)
@@ -131,10 +133,10 @@ void u_add_meths (ucl_object_t * obj, meth_list_t * meths)
         ucl_array_append (arr, s16db_meth_to_ucl (it->val));
 }
 
-ucl_object_t * s16db_inst_to_ucl (svc_instance_t * inst)
+ucl_object_t * s16db_inst_to_ucl (S16ServiceInstance * inst)
 {
     ucl_object_t * uinst = ucl_object_typed_new (UCL_OBJECT);
-    char * path = s16_path_to_string (inst->path);
+    char * path = S16PathToString (inst->path);
 
     ins_key (uinst, "path", path);
 
@@ -157,10 +159,10 @@ ucl_object_t * s16db_inst_to_ucl (svc_instance_t * inst)
     return uinst;
 }
 
-ucl_object_t * s16db_svc_to_ucl (svc_t * svc)
+ucl_object_t * s16db_S16Serviceo_ucl (S16Service * svc)
 {
     ucl_object_t * usvc = ucl_object_typed_new (UCL_OBJECT);
-    char * path = s16_path_to_string (svc->path);
+    char * path = S16PathToString (svc->path);
     ins_key (usvc, "path", path);
 
     if (svc->def_inst)
@@ -193,7 +195,7 @@ ucl_object_t * s16db_svc_to_ucl (svc_t * svc)
 ucl_object_t * s16db_note_to_ucl (const s16note_t * note)
 {
     ucl_object_t * unote = ucl_object_typed_new (UCL_OBJECT);
-    char * path = s16_path_to_string (note->path);
+    char * path = S16PathToString (note->path);
 
     ucl_object_insert_key (
         unote, ucl_object_fromint (note->note_type), "note-type", 0, 1);
@@ -212,9 +214,9 @@ ucl_object_t * s16db_note_to_ucl (const s16note_t * note)
  * Conversions from UCL to internal representation
  ******************************************************/
 
-path_t * s16db_string_to_path (const char * txt)
+S16Path * s16db_string_to_path (const char * txt)
 {
-    path_t * path = calloc (1, sizeof (path_t));
+    S16Path * path = calloc (1, sizeof (S16Path));
     size_t len;
     size_t svc_len = 0;
 
@@ -240,13 +242,13 @@ path_t * s16db_string_to_path (const char * txt)
 
 #define IS(x) (!strcmp (txt, x))
 
-int s16db_string_to_depgroup_type (const char * txt)
+int s16db_string_to_S16DependencyGroupype (const char * txt)
 {
     /* clang-format off */
-    return IS("require-all") ? REQUIRE_ALL
-         : IS("require-any") ? REQUIRE_ANY
-         : IS("optional-all") ? OPTIONAL_ALL
-         : IS("exclude-all") ? EXCLUDE_ALL
+    return IS("require-all") ? kS16RequireAll
+         : IS("require-any") ? kS16RequireAny
+         : IS("optional-all") ? kS16OptionalAll
+         : IS("exclude-all") ? kS16ExcludeAll
          : -1;
     /* clang-format on */
 }
@@ -254,25 +256,25 @@ int s16db_string_to_depgroup_type (const char * txt)
 int s16db_string_to_depgroup_restarton (const char * txt)
 {
     /* clang-format off */
-    return IS("none") ? ON_NONE
-         : IS("error") ? ON_ERROR
-         : IS("refresh") ? ON_REFRESH 
-         : IS("restart") ? ON_RESTART
+    return IS("none") ? kS16RestartOnNone
+         : IS("error") ? kS16RestartOnError
+         : IS("refresh") ? kS16RestartOnRefresh 
+         : IS("restart") ? kS16RestartOnRestart
          : -1;
     /* clang-format on */
 }
 
 #undef IS
 
-path_t * s16db_ucl_to_path (const ucl_object_t * upath)
+S16Path * s16db_ucl_to_path (const ucl_object_t * upath)
 {
     assert (ucl_object_type (upath) == UCL_STRING);
     return s16db_string_to_path (ucl_object_tostring (upath));
 }
 
-depgroup_t * s16db_ucl_to_depgroup (const ucl_object_t * obj)
+S16DependencyGroup * s16db_ucl_to_depgroup (const ucl_object_t * obj)
 {
-    depgroup_t * depgroup = calloc (1, sizeof (depgroup_t));
+    S16DependencyGroup * depgroup = calloc (1, sizeof (S16DependencyGroup));
     const ucl_object_t *type, *restart_on, *paths, *upath;
     ucl_object_iter_t it = NULL;
 
@@ -284,13 +286,14 @@ depgroup_t * s16db_ucl_to_depgroup (const ucl_object_t * obj)
     assert (restart_on && ucl_object_type (restart_on) == UCL_STRING);
     assert (paths && ucl_object_type (paths) == UCL_ARRAY);
 
-    depgroup->type = s16db_string_to_depgroup_type (ucl_object_tostring (type));
+    depgroup->type =
+        s16db_string_to_S16DependencyGroupype (ucl_object_tostring (type));
     depgroup->restart_on =
         s16db_string_to_depgroup_restarton (ucl_object_tostring (restart_on));
 
     while ((upath = ucl_iterate_object (paths, &it, true)))
     {
-        path_t * path = s16db_ucl_to_path (upath);
+        S16Path * path = s16db_ucl_to_path (upath);
         assert (path);
         path_list_add (&depgroup->paths, path);
     }
@@ -298,9 +301,9 @@ depgroup_t * s16db_ucl_to_depgroup (const ucl_object_t * obj)
     return depgroup;
 }
 
-property_t * s16db_ucl_to_prop (const ucl_object_t * obj)
+S16Property * s16db_ucl_to_prop (const ucl_object_t * obj)
 {
-    property_t * prop = calloc (1, sizeof (property_t));
+    S16Property * prop = calloc (1, sizeof (S16Property));
     const ucl_object_t *name, *val;
 
     name = ucl_object_lookup (obj, "name");
@@ -339,7 +342,7 @@ void add_props (const ucl_object_t * props, prop_list_t * list)
 
     while ((ucl_prop = ucl_iterate_object (props, &it, true)))
     {
-        property_t * prop = s16db_ucl_to_prop (ucl_prop);
+        S16Property * prop = s16db_ucl_to_prop (ucl_prop);
         if (!prop)
             fprintf (stderr, "Bad property\n");
         else
@@ -347,9 +350,9 @@ void add_props (const ucl_object_t * props, prop_list_t * list)
     }
 }
 
-method_t * s16db_ucl_to_meth (const ucl_object_t * obj)
+S16ServiceMethod * s16db_ucl_to_meth (const ucl_object_t * obj)
 {
-    method_t * meth = calloc (1, sizeof (method_t));
+    S16ServiceMethod * meth = calloc (1, sizeof (S16ServiceMethod));
     const ucl_object_t *name, *props;
 
     name = ucl_object_lookup (obj, "name");
@@ -387,7 +390,7 @@ static void add_meths (const ucl_object_t * meths, meth_list_t * list)
 
     while ((ucl_meth = ucl_iterate_object (meths, &it, true)))
     {
-        method_t * meth = s16db_ucl_to_meth (ucl_meth);
+        S16ServiceMethod * meth = s16db_ucl_to_meth (ucl_meth);
         if (!meth)
             fprintf (stderr, "Bad method\n");
         else
@@ -403,7 +406,7 @@ static void add_depgroups (const ucl_object_t * depgroups,
 
     while ((ucl_depgroup = ucl_iterate_object (depgroups, &it, true)))
     {
-        depgroup_t * depgroup = s16db_ucl_to_depgroup (ucl_depgroup);
+        S16DependencyGroup * depgroup = s16db_ucl_to_depgroup (ucl_depgroup);
         if (!depgroup)
             fprintf (stderr, "Bad depgroup\n");
         else
@@ -411,9 +414,9 @@ static void add_depgroups (const ucl_object_t * depgroups,
     }
 }
 
-svc_instance_t * s16db_ucl_to_inst (const ucl_object_t * obj)
+S16ServiceInstance * s16db_ucl_to_inst (const ucl_object_t * obj)
 {
-    svc_instance_t * inst = calloc (1, sizeof (svc_t));
+    S16ServiceInstance * inst = calloc (1, sizeof (S16Service));
     const ucl_object_t *path, *props, *meths, *depgroups, *enabled, *state;
 
     inst->props = prop_list_new ();
@@ -447,7 +450,7 @@ svc_instance_t * s16db_ucl_to_inst (const ucl_object_t * obj)
         add_meths (meths, &inst->meths);
     if (depgroups)
         add_depgroups (depgroups, &inst->depgroups);
-    inst->state = state ? ucl_object_toint (state) : S_NONE;
+    inst->state = state ? ucl_object_toint (state) : kS16StateNone;
     inst->enabled = enabled ? ucl_object_toboolean (enabled) : true;
 
     return inst;
@@ -457,9 +460,9 @@ fail:
     return NULL;
 }
 
-svc_t * s16db_ucl_to_svc (const ucl_object_t * obj)
+S16Service * s16db_ucl_to_svc (const ucl_object_t * obj)
 {
-    svc_t * svc = calloc (1, sizeof (svc_t));
+    S16Service * svc = calloc (1, sizeof (S16Service));
     const ucl_object_t *path, *def_inst, *props, *meths, *instances, *depgroups,
         *state;
 
@@ -501,7 +504,7 @@ svc_t * s16db_ucl_to_svc (const ucl_object_t * obj)
         add_meths (meths, &svc->meths);
     if (depgroups)
         add_depgroups (depgroups, &svc->depgroups);
-    svc->state = state ? ucl_object_toint (state) : S_NONE;
+    svc->state = state ? ucl_object_toint (state) : kS16StateNone;
 
     if (instances)
     {
@@ -510,7 +513,7 @@ svc_t * s16db_ucl_to_svc (const ucl_object_t * obj)
 
         while ((ucl_inst = ucl_iterate_object (instances, &it, true)))
         {
-            svc_instance_t * inst = s16db_ucl_to_inst (ucl_inst);
+            S16ServiceInstance * inst = s16db_ucl_to_inst (ucl_inst);
             if (!inst)
                 goto fail;
             else
@@ -533,7 +536,7 @@ svc_list_t s16db_ucl_to_svcs (const ucl_object_t * usvcs)
 
     while ((ucl_svc = ucl_iterate_object (usvcs, &it, true)))
     {
-        svc_t * svc = s16db_ucl_to_svc (ucl_svc);
+        S16Service * svc = s16db_ucl_to_svc (ucl_svc);
         assert (svc);
         svc_list_add (&svcs, svc);
     }

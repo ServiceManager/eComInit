@@ -40,8 +40,8 @@ extern "C"
     typedef struct PBusInvocationContext PBusInvocationContext;
     typedef struct PBusServer PBusServer;
 
-    S16List (PBusObject, PBusObject *);
-    S16List (PBusPathElement, char *);
+    S16ListType (PBusObject, PBusObject *);
+    S16ListType (PBusPathElement, char *);
 
     typedef PBusObject * (*ResolveSubObjectFun) (
         PBusObject * self, void ** user, const char * fullPath,

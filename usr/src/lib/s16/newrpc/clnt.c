@@ -26,19 +26,19 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "dnv.h"
-#include "nv.h"
 #include "S16/List.h"
 #include "S16/NVRPC.h"
+#include "dnv.h"
+#include "nv.h"
 
 typedef struct
 {
     const char * name;
     void * fun;
     s16r_message_signature * sig;
-} s16r_method_t;
+} S16JSONRPCMethod;
 
-S16List (s16r_method, s16r_method_t *);
+S16ListType (s16r_method, S16JSONRPCMethod *);
 
 struct s16r_srv_t
 {
@@ -55,12 +55,12 @@ typedef void * (*s16r_fun3_t) (s16r_data_t *, const void *, const void *,
 typedef void * (*s16r_fun4_t) (s16r_data_t *, const void *, const void *,
                                const void *, const void *);
 
-static bool matchMeth (s16r_method_t * meth, void * str)
+static bool matchMeth (S16JSONRPCMethod * meth, void * str)
 {
     return !strcmp (meth->sig->name, str);
 }
 
-static s16r_method_t * findMeth (s16r_srv_t * srv, const char * name)
+static S16JSONRPCMethod * findMeth (s16r_srv_t * srv, const char * name)
 {
     s16r_method_list_it it =
         s16r_method_list_find (&srv->meths, matchMeth, (void *)name);
@@ -80,7 +80,7 @@ nvlist_t * s16r_make_request (const char * meth_name, nvlist_t * params)
     return req;
 }
 
-void * s16r_dispatch_fun (s16r_data_t * dat, s16r_method_t * meth,
+void * s16r_dispatch_fun (s16r_data_t * dat, S16JSONRPCMethod * meth,
                           nvlist_t * nvparams)
 {
     void ** params;
@@ -129,7 +129,7 @@ nvlist_t * s16r_handle_request (s16r_srv_t * srv, nvlist_t * req)
     const char * methname;
     bool isNote = false;
 
-    s16r_method_t * meth;
+    S16JSONRPCMethod * meth;
     s16r_data_t * dat;
     nvlist_t * params;
     void * result;
@@ -182,7 +182,7 @@ nvlist_t * s16r_handle_request (s16r_srv_t * srv, nvlist_t * req)
 void s16r_srv_register_method (s16r_srv_t * srv, s16r_message_signature * sig,
                                s16r_fun_t fun)
 {
-    s16r_method_t * meth = malloc (sizeof (*meth));
+    S16JSONRPCMethod * meth = malloc (sizeof (*meth));
     meth->fun = fun;
     meth->sig = sig;
     s16r_method_list_add (&srv->meths, meth);

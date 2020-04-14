@@ -34,8 +34,8 @@ extern "C"
 #include <stddef.h>
 #include <stdint.h>
 
-#include "S16/PlatformDefinitions.h"
 #include "S16/List.h"
+#include "S16/PlatformDefinitions.h"
 
 #ifndef S16_MEM_
 #define S16_MEM_
@@ -45,40 +45,42 @@ extern "C"
     void s16mem_free (void * ap);
 #endif
 
-	typedef struct path_s path_t;
-	typedef struct svc_instance_s svc_instance_t;
-	typedef struct svc_s svc_t;
+    typedef struct path_s S16Path;
+    typedef struct svc_instance_s S16ServiceInstance;
+    typedef struct svc_s S16Service;
 
     /* Logging functionality */
     /* Log level: At which level of verbosity should this be emitted? */
     typedef enum
     {
-        DBG,
-        INFO,
-        WARN,
-        ERR,
-    } s16_log_level_t;
+        kS16LogDebug,
+        kS16LogInfo,
+        kS16LogWarn,
+        kS16LogError,
+    } S16LogLevel;
 
-    /* Initialises the log system.
-     * name: Name of your program. */
-    void s16_log_init (const char * name);
+    /*
+     * Initialises the log system.
+     * name: Name of your program.
+     */
+    void S16LogInit (const char * name);
 
-    void s16_log (s16_log_level_t level, const char * fmt, ...);
-    void s16_log_path (s16_log_level_t level, const path_t * path,
-                       const char * fmt, ...);
-    void s16_log_svc (s16_log_level_t level, const svc_t * svc,
-                      const char * fmt, ...);
-    void s16_log_inst (s16_log_level_t level, const svc_instance_t * inst,
-                       const char * fmt, ...);
+    void S16Log (S16LogLevel level, const char * fmt, ...);
+    void S16LogPath (S16LogLevel level, const S16Path * path, const char * fmt,
+                     ...);
+    void S16LogService (S16LogLevel level, const S16Service * svc,
+                        const char * fmt, ...);
+    void S16Loginst (S16LogLevel level, const S16ServiceInstance * inst,
+                     const char * fmt, ...);
 
     /* Misc functionality */
     /* Set FD_CLOEXEC on some FD, preserving old flags. */
-    void s16_cloexec (int fd);
+    void S16CloseOnExec (int fd);
     /*
      * Handle a signal with a Kernel Queue. You must check for EVFILT_SIGNAL in
      * your event loop.
      */
-    void s16_handle_signal (int kq, int sig);
+    void S16HandleSignalWithKQueue (int kq, int sig);
 
 #ifdef __cplusplus
 }

@@ -36,8 +36,8 @@
 #include <string.h>
 
 #include "S16/JSONRPCClient.h"
-#include "S16/ServiceNotification.h"
 #include "S16/JSONRPCServer.h"
+#include "S16/ServiceNotification.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -92,8 +92,8 @@ extern "C"
         } type;
 
         union {
-            svc_t * s;
-            svc_instance_t * i;
+            S16Service * s;
+            S16ServiceInstance * i;
         };
 
     } s16db_lookup_result_t;
@@ -130,19 +130,20 @@ extern "C"
     int s16db_import_ucl_svc (s16db_hdl_t * hdl, struct ucl_object_s * usvc,
                               s16db_layer_t layer);
     /* Gets the state for the given instance path. */
-    svc_state_t s16db_get_state (s16db_hdl_t * hdl, path_t * path);
+    S16ServiceState s16db_get_state (s16db_hdl_t * hdl, S16Path * path);
     /* Sets the state for the given instance path.
      * Returns: 0 if successful. */
-    int s16db_set_state (s16db_hdl_t * hdl, path_t * path, svc_state_t state);
+    int s16db_set_state (s16db_hdl_t * hdl, S16Path * path,
+                         S16ServiceState state);
     /* Disables the given path. If path is an instance, disables that
      * instance; if path is a service, disables all its instances. Otherwise
      * does nothing. Returns: 0 if successful. */
-    int s16db_disable (s16db_hdl_t * hdl, path_t * path);
+    int s16db_disable (s16db_hdl_t * hdl, S16Path * path);
 
     /* Enables the given path. If path is an instance, enables that
      * instance; if path is a service, enables all its instances. Otherwise
      * does nothing. Returns: 0 if successful. */
-    int s16db_enable (s16db_hdl_t * hdl, path_t * path);
+    int s16db_enable (s16db_hdl_t * hdl, S16Path * path);
 
     /**********************************************************
      * Permanent state
@@ -150,7 +151,7 @@ extern "C"
      **********************************************************/
     /* Looks up whether the given instance is enabled. Returns true if it
      * is, and false if it isn't. */
-    bool s16db_get_inst_enabled (s16db_hdl_t * hdl, path_t * path);
+    bool s16db_get_inst_enabled (s16db_hdl_t * hdl, S16Path * path);
 
     /**********************************************************
      * Lookup
@@ -159,28 +160,28 @@ extern "C"
     const svc_list_t * s16db_get_all_services (s16db_hdl_t * hdl);
     /* Retrieves the merged service or instance specified by the path.
      * r.type is ENOTFOUND if not found. */
-    s16db_lookup_result_t s16db_lookup_path (s16db_hdl_t * hdl, path_t * path);
+    s16db_lookup_result_t s16db_lookup_path (s16db_hdl_t * hdl, S16Path * path);
 
     /**********************************************************
      * Conversions
      **********************************************************/
     /* UCL to internal: */
     /* Converts a string path to a path. */
-    path_t * s16db_string_to_path (const char * txt);
-    path_t * s16db_ucl_to_path (const struct ucl_object_s * upath);
+    S16Path * s16db_string_to_path (const char * txt);
+    S16Path * s16db_ucl_to_path (const struct ucl_object_s * upath);
     /* Converts a UCL instance to an instance */
-    svc_instance_t * s16db_ucl_to_inst (const struct ucl_object_s * obj);
+    S16ServiceInstance * s16db_ucl_to_inst (const struct ucl_object_s * obj);
     /* Converts a UCL manifest to a service. */
-    svc_t * s16db_ucl_to_svc (const struct ucl_object_s * obj);
+    S16Service * s16db_ucl_to_svc (const struct ucl_object_s * obj);
     /* Converts a UCL service array to a service list. */
     svc_list_t s16db_ucl_to_svcs (const struct ucl_object_s * usvcs);
     /* Converts a UCL notification to an S16 notification. */
     s16note_t * s16db_ucl_to_note (const struct ucl_object_s * unote);
 
     /* Internal to UCL: */
-    struct ucl_object_s * s16db_path_to_ucl (path_t * path);
-    struct ucl_object_s * s16db_inst_to_ucl (svc_instance_t * path);
-    struct ucl_object_s * s16db_svc_to_ucl (svc_t * svc);
+    struct ucl_object_s * s16db_S16Patho_ucl (S16Path * path);
+    struct ucl_object_s * s16db_inst_to_ucl (S16ServiceInstance * path);
+    struct ucl_object_s * s16db_S16Serviceo_ucl (S16Service * svc);
     struct ucl_object_s * s16db_note_to_ucl (const s16note_t * note);
 
 #ifdef __cplusplus

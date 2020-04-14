@@ -31,8 +31,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "graphd.h"
 #include "S16/Repository.h"
+#include "graphd.h"
 
 int kq;
 
@@ -45,7 +45,7 @@ int main (int argc, char * argv[])
     kq = kqueue ();
     struct timespec tmout = {3, 0};
 
-    s16_log_init ("S16 Graphing Service");
+    S16LogInit ("S16 Graphing Service");
 
     if (kq == -1)
         perror ("KQueue: Failed to open\n");

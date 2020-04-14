@@ -32,9 +32,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "nv.h"
-#include "S16/Service.h"
 #include "S16/NVRPC.h"
+#include "S16/Service.h"
+#include "nv.h"
 #include "systemd/sd-daemon.h"
 
 #include "PBusBroker.h"
@@ -94,14 +94,14 @@ int main ()
 
     /* make sure repo socket deleted after exit */
     atexit (clean_exit);
-    s16_log_init ("P-Bus Broker");
+    S16LogInit ("P-Bus Broker");
 
     if ((pbCtx.aKQ = kqueue ()) == -1)
     {
         perror ("KQueue: Failed to open\n");
     }
 
-    s16_handle_signal (pbCtx.aKQ, SIGINT);
+    S16HandleSignalWithKQueue (pbCtx.aKQ, SIGINT);
 
     if ((pbCtx.aListenSocket = socket (AF_UNIX, SOCK_STREAM, 0)) == -1)
     {

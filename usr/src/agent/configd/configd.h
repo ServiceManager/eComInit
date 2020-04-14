@@ -34,7 +34,7 @@ typedef struct
     int kinds;
 } subscriber_t;
 
-S16List (subscriber, subscriber_t *);
+S16ListType (subscriber, subscriber_t *);
 
 /* rpc.c */
 void rpc_setup (s16rpc_srv_t * srv);
@@ -42,10 +42,10 @@ void rpc_setup (s16rpc_srv_t * srv);
 /* db.c */
 void db_setup ();
 void db_destroy ();
-void db_import (s16db_layer_t layer, svc_t * svc);
-s16db_lookup_result_t db_lookup_path_merged (path_t * path);
+void db_import (s16db_layer_t layer, S16Service * svc);
+s16db_lookup_result_t db_lookup_path_merged (S16Path * path);
 svc_list_t * db_get_all_svcs_merged ();
-int db_set_enabled (path_t * path, bool enabled);
+int db_set_enabled (S16Path * path, bool enabled);
 
 extern s16db_scope_t global;
 extern subscriber_list_t subs;

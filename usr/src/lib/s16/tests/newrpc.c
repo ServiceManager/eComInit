@@ -25,9 +25,9 @@
 
 #include <atf-c.h>
 
-#include "nv.h"
 #include "S16/List.h"
 #include "S16/NVRPC.h"
+#include "nv.h"
 
 typedef struct
 {
@@ -37,7 +37,7 @@ typedef struct
     boolptr_t d;
 } testStruct1;
 
-S16List (test1, testStruct1 *);
+S16ListType (test1, testStruct1 *);
 
 typedef struct
 {

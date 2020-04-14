@@ -168,7 +168,7 @@ static nvlist_t * findReceiver (PBusObject * self, void * extraData,
             self = self->isA->fnResolveSubObject (
                 self, &extraData, fullPath, next, remainingPath, selector);
             if (!self)
-                return /* ERROR */ NULL;
+                return /* kS16LogErrorOR */ NULL;
             return findReceiver (self,
                                  extraData,
                                  fullPath,

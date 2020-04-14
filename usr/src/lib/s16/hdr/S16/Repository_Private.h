@@ -49,13 +49,13 @@ extern "C"
     /* Retrieves from the repository the merged service or instance
      * specified by the path. r.type is ENOTFOUND if not found. */
     s16db_lookup_result_t s16db_repo_lookup_path_merged (s16db_hdl_t * hdl,
-                                                         path_t * path);
+                                                         S16Path * path);
 
     /**********************************************************
      * Scope lookup
      **********************************************************/
     s16db_lookup_result_t s16db_lookup_path_in_scope (s16db_scope_t scope,
-                                                      path_t * path);
+                                                      S16Path * path);
 
 #ifdef __cplusplus
 }

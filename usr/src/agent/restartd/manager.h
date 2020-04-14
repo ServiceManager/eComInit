@@ -27,8 +27,8 @@
 #define MANAGER_H_
 
 #include "S16/Repository.h"
-#include "S16/ServiceNotification.h"
 #include "S16/RestarterServices.h"
+#include "S16/ServiceNotification.h"
 
 #include "timer.h"
 #include "unit.h"
@@ -69,7 +69,7 @@ void manager_fork_cleanup ();
 /* To be called when the service repository comes up. */
 void manager_configd_came_up ();
 Unit * manager_find_unit_for_pid (pid_t pid);
-Unit * manager_find_unit_for_path (path_t * path);
+Unit * manager_find_unit_for_path (S16Path * path);
 
 extern Manager manager;
 

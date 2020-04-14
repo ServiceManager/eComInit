@@ -46,9 +46,9 @@
     unit->timer_id = 0
 
 #define DbgEnteringState(x)                                                    \
-    s16_log_path (INFO, unit->path, "Unit targetting state %s\n", #x);
+    S16LogPath (kS16LogInfo, unit->path, "Unit targetting state %s\n", #x);
 #define DbgEnteredState(x)                                                     \
-    s16_log_path (INFO, unit->path, "Unit arrived at state %s\n", #x);
+    S16LogPath (kS16LogInfo, unit->path, "Unit arrived at state %s\n", #x);
 
 #define EStateProto(state) void unit_enter_##state (Unit * unit)
 
@@ -71,7 +71,7 @@ void fork_cleanup_cb (void * data)
     manager_fork_cleanup ();
 }
 
-UnitMethodType state_to_method_type (UnitState state)
+UnitMethodType state_to_S16ServiceMethodype (UnitState state)
 {
     /* clang-format off */
     return state == US_PRESTART  ? UM_PRESTART
@@ -104,12 +104,13 @@ pid_t unit_fork_and_register (Unit * unit, const char * cmd)
 
     if (pwait == NULL || pwait->pid == 0)
     {
-        s16_log_path (ERR, unit->path, "failed to fork for command %s\n", cmd);
+        S16LogPath (
+            kS16LogError, unit->path, "failed to fork for command %s\n", cmd);
         return ret;
     }
 
     ret = pwait->pid;
-    s16_log_path (DBG, unit->path, "Child PID: %d\n", ret);
+    S16LogPath (kS16LogDebug, unit->path, "Child PID: %d\n", ret);
     pt_watch_pid (manager.pt, ret);
     pid_list_add (&unit->pids, ret);
     process_fork_continue (pwait);
@@ -143,7 +144,7 @@ static void unit_restart_begin_cb (long id, void * data)
 void unit_retry_start (Unit * unit, int msecs)
 {
     printf ("Unit retry start\n");
-    unit->target = US_NONE;
+    unit->target = UkS16StateNone;
     unit_purge_and_target (unit);
     unit->meth_restart_timer_id =
         timerset_add (&manager.ts, 500, unit, unit_restart_begin_cb);
@@ -152,13 +153,13 @@ void unit_retry_start (Unit * unit, int msecs)
 void unit_enter_maintenance (Unit * unit)
 {
     DbgEnteredState (Maintenance);
-    unit->state = US_MAINTENANCE;
+    unit->state = UkS16StateMaintenance;
 }
 
 void unit_enter_offline (Unit * unit)
 {
     DbgEnteredState (Offline);
-    unit->state = US_OFFLINE;
+    unit->state = UkS16StateOffline;
 }
 
 void unit_enter_prestart (Unit * unit)
@@ -172,7 +173,7 @@ void unit_enter_prestart (Unit * unit)
             unit_fork_and_register (unit, unit->methods[UM_PRESTART]);
         if (!unit->main_pid)
         {
-            unit->target = US_MAINTENANCE;
+            unit->target = UkS16StateMaintenance;
             unit_purge_and_target (unit);
             return;
         }
@@ -196,7 +197,7 @@ void unit_enter_start (Unit * unit)
             {
                 printf ("Erecting dirwatch for unit failed\n");
                 timer_del (unit->timer_id);
-                unit->target = US_MAINTENANCE;
+                unit->target = UkS16StateMaintenance;
                 unit_purge_and_target (unit);
             }
         }
@@ -206,7 +207,7 @@ void unit_enter_start (Unit * unit)
     unit->main_pid = unit_fork_and_register (unit, unit->methods[UM_START]);
     if (!unit->main_pid)
     {
-        unit->target = US_MAINTENANCE;
+        unit->target = UkS16StateMaintenance;
         unit_purge_and_target (unit);
         return;
     }
@@ -233,7 +234,7 @@ void unit_enter_poststart (Unit * unit)
             unit_fork_and_register (unit, unit->methods[UM_POSTSTART]);
         if (!unit->secondary_pid)
         {
-            unit->target = US_MAINTENANCE;
+            unit->target = UkS16StateMaintenance;
             unit_purge_and_target (unit);
         }
     }
@@ -245,7 +246,7 @@ void unit_enter_online (Unit * unit)
 {
     DbgEnteredState (Online);
     /* Special logic for core services. */
-    if (unit->path == s16_path_configd ())
+    if (unit->path == S16PathOfRepository ())
         manager_configd_came_up ();
 }
 
@@ -263,7 +264,7 @@ void unit_enter_stop (Unit * unit)
          * clearing any remaining processes */
         if (!unit->secondary_pid)
         {
-            unit->target = US_MAINTENANCE;
+            unit->target = UkS16StateMaintenance;
             unit_purge_and_target (unit);
             return;
         }
@@ -320,10 +321,10 @@ void unit_enter_state (Unit * unit, UnitState state)
 {
     switch (state)
     {
-    case US_OFFLINE:
+    case UkS16StateOffline:
         unit_enter_offline (unit);
         break;
-    case US_MAINTENANCE:
+    case UkS16StateMaintenance:
         unit_enter_maintenance (unit);
         break;
     case US_PRESTART:
@@ -335,11 +336,11 @@ void unit_enter_state (Unit * unit, UnitState state)
     case US_POSTSTART:
         unit_enter_poststart (unit);
         break;
-    case US_ONLINE:
+    case UkS16StateOnline:
         unit_enter_online (unit);
         break;
-    case US_NONE:
-        unit->state = US_NONE;
+    case UkS16StateNone:
+        unit->state = UkS16StateNone;
     }
 }
 
@@ -401,31 +402,30 @@ void unit_ptevent (Unit * unit, pt_info_t * info)
         {
             fprintf (stderr, "Bad exit in a main pid\n");
             /*if (unit->rtype == R_NO)
-                unit->target = US_OFFLINE;*/
+                unit->target = UkS16StateOffline;*/
             /* if we were online, we'll go to offline, and then the graph
              * engine will tell us what to do. */
             /*else*/
-            if (unit->state == US_ONLINE)
+            if (unit->state == UkS16StateOnline)
             {
                 /* add fail time to ringbuffer */
-                unit->target = US_OFFLINE;
+                unit->target = UkS16StateOffline;
                 unit_purge_and_target (unit);
             }
             else
             {
                 int * fail_cnt =
-                    &unit->fail_cnt[state_to_method_type (unit->state)];
+                    &unit->fail_cnt[state_to_S16ServiceMethodype (unit->state)];
 
                 (*fail_cnt)++;
 
                 if (*fail_cnt > 5)
                 {
-                    s16_log_path (
-                        ERR,
-                        unit->path,
-                        "Transitioning to maintenance because: Method "
-                        "failed more than 5 times\n");
-                    unit->target = US_MAINTENANCE;
+                    S16LogPath (kS16LogError,
+                                unit->path,
+                                "Transitioning to maintenance because: Method "
+                                "failed more than 5 times\n");
+                    unit->target = UkS16StateMaintenance;
                     unit_purge_and_target (unit);
                 }
                 else
@@ -448,7 +448,7 @@ void unit_ptevent (Unit * unit, pt_info_t * info)
                 unit_purge_and_target (unit);
                 break;
 
-            case US_ONLINE:
+            case UkS16StateOnline:
             case US_POSTSTART:
                 /* we're in poststart or online, and the main PID of our
                  * service has quit.
@@ -456,7 +456,7 @@ void unit_ptevent (Unit * unit, pt_info_t * info)
                 if (unit->type == U_SIMPLE)
                 {
                     printf ("Online and SIMPLE and Main PID exited.\n");
-                    unit->target = US_OFFLINE;
+                    unit->target = UkS16StateOffline;
                     unit_enter_stop (unit);
                 }
                 else if (unit->type != U_GROUP && LL_empty (&unit->pids))
@@ -464,7 +464,7 @@ void unit_ptevent (Unit * unit, pt_info_t * info)
                     /*if (unit->rtype == R_YES)
                         unit->target = US_PRESTART;
                     else*/
-                    unit->target = US_OFFLINE;
+                    unit->target = UkS16StateOffline;
                     unit_enter_stop (unit);
                 }
                 break;
@@ -484,20 +484,19 @@ void unit_ptevent (Unit * unit, pt_info_t * info)
             {
                 fprintf (stderr, "Bad exit in a secondary pid\n");
                 /*if (unit->rtype == R_NO)
-                    unit->target = US_OFFLINE;*/
+                    unit->target = UkS16StateOffline;*/
                 int * fail_cnt =
-                    &unit->fail_cnt[state_to_method_type (unit->state)];
+                    &unit->fail_cnt[state_to_S16ServiceMethodype (unit->state)];
 
                 (*fail_cnt)++;
 
                 if (*fail_cnt > 5)
                 {
-                    s16_log_path (
-                        ERR,
-                        unit->path,
-                        "Transitioning to maintenance because: Method "
-                        "failed more than 5 times\n");
-                    unit->target = US_MAINTENANCE;
+                    S16LogPath (kS16LogError,
+                                unit->path,
+                                "Transitioning to maintenance because: Method "
+                                "failed more than 5 times\n");
+                    unit->target = UkS16StateMaintenance;
                     unit_purge_and_target (unit);
                 }
                 else
@@ -525,7 +524,7 @@ void unit_timer_event (long id, void * data)
     {
     case US_STOP:
     {
-        s16_log_path (WARN, unit->path, "Stop method timed out.\n");
+        S16LogPath (kS16LogWarn, unit->path, "Stop method timed out.\n");
         unit_enter_stopterm (unit);
         return;
     }
@@ -550,11 +549,11 @@ void unit_timer_event (long id, void * data)
 
         if (unit->fail_cnt[UM_PRESTART] > 5)
         {
-            s16_log_path (ERR,
-                          unit->path,
-                          "Transitioning to maintenance because: Method "
-                          "timedout/failed 5 times in a row.");
-            unit->target = US_MAINTENANCE;
+            S16LogPath (kS16LogError,
+                        unit->path,
+                        "Transitioning to maintenance because: Method "
+                        "timedout/failed 5 times in a row.");
+            unit->target = UkS16StateMaintenance;
             unit_purge_and_target (unit);
         }
         else
@@ -588,8 +587,10 @@ void unit_notify_ready (Unit * unit)
 
 void unit_notify_status (Unit * unit, char * status)
 {
-    s16_log_path (
-        INFO, unit->path, "Unit received status update: \"%s\"\n", status);
+    S16LogPath (kS16LogInfo,
+                unit->path,
+                "Unit received status update: \"%s\"\n",
+                status);
 }
 
 bool unit_has_pid (Unit * unit, pid_t pid)
@@ -602,13 +603,13 @@ bool unit_has_pid (Unit * unit, pid_t pid)
     return false;
 }
 
-Unit * unit_add (path_t * path)
+Unit * unit_add (S16Path * path)
 {
     Unit * unit = calloc (1, sizeof (Unit));
 
     unit->path = path;
     unit->pids = pid_list_new ();
-    unit->state = US_UNINITIALISED;
+    unit->state = UkS16StateUninitialisedIALISED;
 
     Unit_list_add (&manager.units, unit);
 
@@ -623,7 +624,7 @@ void unit_msg (Unit * unit, s16note_t * note)
     {
     case RR_START:
     {
-        s16_log_path (INFO, unit->path, "Received request to bring up.\n");
+        S16LogPath (kS16LogInfo, unit->path, "Received request to bring up.\n");
         unit_enter_prestart (unit);
     }
     }

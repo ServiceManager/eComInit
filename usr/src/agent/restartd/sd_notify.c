@@ -62,9 +62,9 @@
 
 #endif
 
-#include "manager.h"
 #include "S16/Repository.h"
 #include "S16/RestarterServices.h"
+#include "manager.h"
 
 static int sd_notify_fd;
 
@@ -105,7 +105,7 @@ void sd_notify_srv_setup (int kq)
         exit (-1);
     }
 
-    s16_cloexec (s);
+    S16CloseOnExec (s);
 
     EV_SET (&ev, s, EVFILT_READ, EV_ADD, 0, 0, NULL);
     if (kevent (kq, &ev, 1, 0, 0, 0) == -1)
@@ -127,10 +127,10 @@ static void dispatch_sd_notify (pid_t pid, char * buf)
     Unit * unit = manager_find_unit_for_pid (pid);
 
     if (!unit)
-        s16_log (WARN,
-                 "Notification message sent for PID %d which does not belong "
-                 "to any known unit",
-                 pid);
+        S16Log (kS16LogWarn,
+                "Notification message sent for PID %d which does not belong "
+                "to any known unit",
+                pid);
 
     seg = strtok_r (buf, "\n", &saveptr);
     while (seg)
@@ -142,8 +142,9 @@ static void dispatch_sd_notify (pid_t pid, char * buf)
         else if (len > 7 && !strncmp (seg, "STATUS=", 7))
             unit_notify_status (unit, strndup (seg + 7, len - 7));
         else
-            s16_log (
-                WARN, "Unhandled component of notify message: \"%s\"\n", seg);
+            S16Log (kS16LogWarn,
+                    "Unhandled component of notify message: \"%s\"\n",
+                    seg);
 
         seg = strtok_r (NULL, "\n", &saveptr);
     }
@@ -186,23 +187,23 @@ void sd_notify_srv_investigate_kevent (struct kevent * ev)
     }
     else if (msg.msg_flags & MSG_TRUNC)
     {
-        s16_log (WARN, "Truncated message; not processing.");
+        S16Log (kS16LogWarn, "Truncated message; not processing.");
     }
     else
     {
         if (cmsg.hdr.cmsg_type != SCM_CREDS)
         {
-            s16_log (
-                WARN,
+            S16Log (
+                kS16LogWarn,
                 "Missing credentials in sd_notify message; not processing.\n");
             return;
         }
 
         creds = (CREDS *)CMSG_DATA (&cmsg.hdr);
-        s16_log (DBG,
-                 "Received SystemD-style notification from pid %lu: <%s>\n",
-                 CREDS_PID (creds),
-                 buf);
+        S16Log (kS16LogDebug,
+                "Received SystemD-style notification from pid %lu: <%s>\n",
+                CREDS_PID (creds),
+                buf);
         dispatch_sd_notify (CREDS_PID (creds), buf);
     }
 #endif

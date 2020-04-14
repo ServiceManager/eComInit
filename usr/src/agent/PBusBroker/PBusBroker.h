@@ -49,7 +49,7 @@ extern "C"
         PBusCredentials aCredentials;
     } PBusClient;
 
-    S16List (PBusClient, PBusClient *);
+    S16ListType (PBusClient, PBusClient *);
 
     typedef struct
     {

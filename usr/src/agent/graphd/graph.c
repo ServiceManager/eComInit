@@ -48,7 +48,7 @@
 
 vertex_list_t graph;
 
-#define PS(x) s16_path_to_string (x->path)
+#define PS(x) S16PathToString (x->path)
 
 void print_all ();
 
@@ -84,14 +84,15 @@ void vtx_offline (vertex_t * v, void * reason)
 
 void vtx_enable (vertex_t * v)
 {
-    s16note_list_add (
-        &notes,
-        s16note_new (
-            N_STATE_CHANGE, SC_OFFLINE, v->path, (int)(intptr_t)ON_RESTART));
+    s16note_list_add (&notes,
+                      s16note_new (N_STATE_CHANGE,
+                                   SC_OFFLINE,
+                                   v->path,
+                                   (int)(intptr_t)kS16RestartOnRestart));
 }
 
 /* n.b. we don't really need a reason for this; cut it all out and generate an
- * ON_RESTART event? */
+ * kS16RestartOnRestart event? */
 void vtx_disable (vertex_t * v, void * reason)
 {
     s16note_list_add (
@@ -114,12 +115,12 @@ static void vtx_dependents_do (vertex_t * v, void (*fun) (vertex_t *, void *),
 
 bool vtx_is_running (vertex_t * v)
 {
-    return v->state == S_ONLINE || v->state == S_DEGRADED;
+    return v->state == kS16StateOnline || v->state == kS16StateDegraded;
 }
 
 static bool /* continue? */
 vtx_is_reachable_internal (vertex_t * v, vertex_t * to, vertex_list_t * seen,
-                           vertex_list_t * path_to)
+                           vertex_list_t * pathTo)
 {
     bool cont = true;
 
@@ -127,37 +128,37 @@ vtx_is_reachable_internal (vertex_t * v, vertex_t * to, vertex_list_t * seen,
         return false;
     vertex_list_add (seen, v);
 
-    if (v->dg_type == EXCLUDE_ALL)
+    if (v->dg_type == kS16ExcludeAll)
         return false;
 
     if (v == to)
     {
-        vertex_list_lpush (path_to, v);
+        vertex_list_lpush (pathTo, v);
         return false;
     }
 
     list_foreach (edge, &v->dependencies, it)
     {
-        cont = vtx_is_reachable_internal (it->val->to, to, seen, path_to);
+        cont = vtx_is_reachable_internal (it->val->to, to, seen, pathTo);
         if (!cont)
             break;
     }
 
-    if (vertex_list_size (path_to))
-        vertex_list_lpush (path_to, v);
+    if (vertex_list_size (pathTo))
+        vertex_list_lpush (pathTo, v);
 
     return cont;
 }
 
 /* Returns true if a vertex is reachable from another. */
-bool vtx_is_reachable (vertex_t * from, vertex_t * to, vertex_list_t * path_to)
+bool vtx_is_reachable (vertex_t * from, vertex_t * to, vertex_list_t * pathTo)
 {
     vertex_list_t seen = vertex_list_new ();
 
-    vtx_is_reachable_internal (from, to, &seen, path_to);
+    vtx_is_reachable_internal (from, to, &seen, pathTo);
     vertex_list_destroy (&seen);
 
-    if (!vertex_list_empty (path_to))
+    if (!vertex_list_empty (pathTo))
         return true;
     else
         return false;
@@ -168,11 +169,11 @@ bool vtx_is_reachable (vertex_t * from, vertex_t * to, vertex_list_t * path_to)
  * If cyclic, returns 1 and does not add the edges.
  * Otherwise returns 0 and adds the edges.
  */
-int vtx_dependency_add (vertex_t * v, vertex_t * to, vertex_list_t * path_to)
+int vtx_dependency_add (vertex_t * v, vertex_t * to, vertex_list_t * pathTo)
 {
-    if (vtx_is_reachable (to, v, path_to))
+    if (vtx_is_reachable (to, v, pathTo))
     {
-        s16_log_path (ERR, v->path, "Cyclical dependency\n");
+        S16LogPath (kS16LogError, v->path, "Cyclical dependency\n");
         return 1;
     }
     else
@@ -186,18 +187,18 @@ void graph_init () { graph = vertex_list_new (); }
 
 bool match_vertex_by_path (vertex_t * cand, void * path)
 {
-    return s16_path_equal (cand->path, (path_t *)path);
+    return S16PathEqual (cand->path, (S16Path *)path);
 }
 
-vertex_t * vtx_find_by_path (const path_t * name)
+vertex_t * vtx_find_by_path (const S16Path * name)
 {
     return list_it_val (
         vertex_list_find (&graph, match_vertex_by_path, (void *)name));
 }
 
-vertex_t * vtx_find_or_add (path_t * path, vertex_type_t type,
-                            depgroup_type_t dg_type,
-                            depgroup_restarton_t restart_on)
+vertex_t * vtx_find_or_add (S16Path * path, vertex_type_t type,
+                            S16DependencyGroupType dg_type,
+                            S16DependencyGroupRestartOnCondition restart_on)
 {
     vertex_t * nv = vtx_find_by_path (path);
 
@@ -206,7 +207,7 @@ vertex_t * vtx_find_or_add (path_t * path, vertex_type_t type,
 
     nv = calloc (1, sizeof (vertex_t));
 
-    nv->path = s16_path_copy (path);
+    nv->path = S16PathCopy (path);
 
     nv->dependencies = edge_list_new ();
     nv->dependents = edge_list_new ();
@@ -215,7 +216,7 @@ vertex_t * vtx_find_or_add (path_t * path, vertex_type_t type,
     nv->dg_type = dg_type;
     nv->restart_on = restart_on;
 
-    nv->state = S_UNINIT;
+    nv->state = kS16StateUninitialised;
 
     vertex_list_add (&graph, nv);
 
@@ -224,22 +225,22 @@ vertex_t * vtx_find_or_add (path_t * path, vertex_type_t type,
 
 void vtx_setup (vertex_t * v);
 
-int setup_dep (path_t * path, vertex_t * vg, vertex_list_t * path_to)
+int setup_dep (S16Path * path, vertex_t * vg, vertex_list_t * pathTo)
 {
     vertex_t * vdep;
 
     assert ((vdep = vtx_find_by_path (path)));
 
-    if (vtx_dependency_add (vg, vdep, path_to))
+    if (vtx_dependency_add (vg, vdep, pathTo))
         return 1;
 
     vtx_setup (vdep);
     return 0;
 }
 
-path_t * make_depgroup_path (const path_t * path, int cnt)
+S16Path * make_depgroup_path (const S16Path * path, int cnt)
 {
-    path_t * dgp = s16_path_copy (path);
+    S16Path * dgp = S16PathCopy (path);
     bool inst = dgp->inst;
     char ** ot = inst ? &dgp->inst : &dgp->svc;
     size_t len_inst = snprintf (NULL, 0, "%s>%d", *ot, cnt);
@@ -251,20 +252,20 @@ path_t * make_depgroup_path (const path_t * path, int cnt)
     return dgp;
 }
 
-int setup_depgroup (vertex_t * v, depgroup_t * dg, path_t * dgp,
-                    vertex_list_t * path_to)
+int setup_depgroup (vertex_t * v, S16DependencyGroup * dg, S16Path * dgp,
+                    vertex_list_t * pathTo)
 {
     vertex_t * dgv;
 
     dgv = vtx_find_or_add (dgp, V_DEPGROUP, dg->type, dg->restart_on);
-    s16_path_destroy (dgp);
-    vtx_dependency_add (v, dgv, path_to);
+    S16PathDestroy (dgp);
+    vtx_dependency_add (v, dgv, pathTo);
 
     v->is_setup = 1;
 
     list_foreach (path, &dg->paths, it)
     {
-        int nerr = setup_dep (it->val, dgv, path_to);
+        int nerr = setup_dep (it->val, dgv, pathTo);
         if (nerr)
             return nerr;
     }
@@ -278,17 +279,17 @@ void vtx_update (vertex_t * v)
 {
     int cnt = 0;
     // bool old_enabled = v->is_enabled;
-    vertex_list_t path_to = vertex_list_new ();
+    vertex_list_t pathTo = vertex_list_new ();
     depgroup_list_t * depgroups = NULL;
 
     if (v->type == V_INST)
     {
-        svc_instance_t * inst = s16db_lookup_path (&hdl, v->path).i;
+        S16ServiceInstance * inst = s16db_lookup_path (&hdl, v->path).i;
         depgroups = &inst->depgroups;
     }
     else if (v->type == V_SVC)
     {
-        svc_t * svc = s16db_lookup_path (&hdl, v->path).s;
+        S16Service * svc = s16db_lookup_path (&hdl, v->path).s;
         depgroups = &svc->depgroups;
     }
     else
@@ -299,13 +300,13 @@ void vtx_update (vertex_t * v)
     list_foreach (depgroup, depgroups, it)
     {
         int err;
-        path_t * dgn = make_depgroup_path (v->path, cnt);
+        S16Path * dgn = make_depgroup_path (v->path, cnt);
 
         cnt++;
 
-        if ((err = setup_depgroup (v, it->val, dgn, &path_to)))
+        if ((err = setup_depgroup (v, it->val, dgn, &pathTo)))
         {
-            printf ("ERROR: Cyclical dependencies\n");
+            printf ("kS16LogErrorOR: Cyclical dependencies\n");
         }
     }
 }
@@ -350,24 +351,24 @@ satisfied_t vtx_inst_satisfies (vertex_t * v, bool recurse)
 
     switch (v->state)
     {
-    case S_UNINIT:
+    case kS16StateUninitialised:
         return UNSATISFIED;
-    case S_DISABLED:
+    case kS16StateDisabled:
         return UNSATISFIABLE;
-    case S_OFFLINE:
+    case kS16StateOffline:
         if (!recurse)
             return UNSATISFIED;
         else /* determine if satisfiable */
             return depgroup_is_satisfied (v, recurse) == UNSATISFIABLE
                        ? UNSATISFIABLE
                        : UNSATISFIED;
-    case S_MAINTENANCE:
+    case kS16StateMaintenance:
         return UNSATISFIABLE;
-    case S_ONLINE:
-    case S_DEGRADED:
+    case kS16StateOnline:
+    case kS16StateDegraded:
         return SATISFIED;
     }
-    s16_log_path (ERR, v->path, "Should NOT be here!\n");
+    S16LogPath (kS16LogError, v->path, "Should NOT be here!\n");
     abort ();
 }
 
@@ -382,22 +383,22 @@ satisfied_t vtx_inst_satisfies_optional (vertex_t * v, bool recurse)
 
     switch (v->state)
     {
-    case S_UNINIT:
+    case kS16StateUninitialised:
         return UNSATISFIED;
-    case S_OFFLINE:
+    case kS16StateOffline:
         if (!recurse)
             return UNSATISFIED;
         else /* determine if satisfiable */
             return depgroup_is_satisfied (v, recurse) == UNSATISFIABLE
                        ? SATISFIED
                        : UNSATISFIED;
-    case S_DISABLED:
-    case S_MAINTENANCE:
-    case S_ONLINE:
-    case S_DEGRADED:
+    case kS16StateDisabled:
+    case kS16StateMaintenance:
+    case kS16StateOnline:
+    case kS16StateDegraded:
         return SATISFIED;
     }
-    s16_log_path (ERR, v->path, "Should NOT be here!\n");
+    S16LogPath (kS16LogError, v->path, "Should NOT be here!\n");
     abort ();
 }
 
@@ -411,19 +412,19 @@ satisfied_t vtx_inst_satisfies_exclusion (vertex_t * v)
 
     switch (v->state)
     {
-    case S_UNINIT:
-    case S_OFFLINE:
+    case kS16StateUninitialised:
+    case kS16StateOffline:
         /* We may be awaiting disabling. */
         return UNSATISFIED;
-    case S_MAINTENANCE:
-    case S_DISABLED:
+    case kS16StateMaintenance:
+    case kS16StateDisabled:
         return SATISFIED;
-    case S_ONLINE:
-    case S_DEGRADED:
+    case kS16StateOnline:
+    case kS16StateDegraded:
         /* If we are awaiting disabling, then we may not be unsatisfiable. */
         return v->is_enabled ? UNSATISFIABLE : UNSATISFIED;
     }
-    s16_log_path (ERR, v->path, "Should NOT be here!\n");
+    S16LogPath (kS16LogError, v->path, "Should NOT be here!\n");
     abort ();
 }
 
@@ -439,7 +440,7 @@ satisfied_t depgroup_is_satisfied (vertex_t * v, bool recurse)
 {
     switch (v->dg_type)
     {
-    case REQUIRE_ALL:
+    case kS16RequireAll:
     {
         satisfied_t sat = SATISFIED;
 
@@ -453,7 +454,7 @@ satisfied_t depgroup_is_satisfied (vertex_t * v, bool recurse)
         return sat;
     }
 
-    case REQUIRE_ANY:
+    case kS16RequireAny:
     {
         bool sat = UNSATISFIABLE;
 
@@ -472,7 +473,7 @@ satisfied_t depgroup_is_satisfied (vertex_t * v, bool recurse)
         return sat;
     }
 
-    case OPTIONAL_ALL:
+    case kS16OptionalAll:
     {
         satisfied_t sat = SATISFIED;
 
@@ -501,15 +502,15 @@ satisfied_t depgroup_is_satisfied (vertex_t * v, bool recurse)
             }
         }
 
-        s16_log_path (INFO,
-                      v->path,
-                      "Optional_all: %s\n",
-                      sat == SATISFIED ? "Satisfied" : "Not satisfied");
+        S16LogPath (kS16LogInfo,
+                    v->path,
+                    "Optional_all: %s\n",
+                    sat == SATISFIED ? "Satisfied" : "Not satisfied");
 
         return sat;
     }
 
-    case EXCLUDE_ALL:
+    case kS16ExcludeAll:
     {
         satisfied_t sat = SATISFIED;
 
@@ -540,20 +541,22 @@ satisfied_t depgroup_is_satisfied (vertex_t * v, bool recurse)
         return sat;
     }
     }
-    s16_log_path (INFO, v->path, "Should NOT be here!\n");
+    S16LogPath (kS16LogInfo, v->path, "Should NOT be here!\n");
     abort ();
 }
 
-vertex_t * install_inst (vertex_t * vsv, svc_instance_t * inst)
+vertex_t * install_inst (vertex_t * vsv, S16ServiceInstance * inst)
 {
-    vertex_t * in = vtx_find_or_add (inst->path, V_INST, REQUIRE_ALL, ON_ANY);
+    vertex_t * in =
+        vtx_find_or_add (inst->path, V_INST, kS16RequireAll, kS16RestartOnAny);
 
     return in;
 }
 
-vertex_t * graph_install_service (svc_t * svc)
+vertex_t * graph_install_service (S16Service * svc)
 {
-    vertex_t * sv = vtx_find_or_add (svc->path, V_SVC, REQUIRE_ALL, ON_ANY);
+    vertex_t * sv =
+        vtx_find_or_add (svc->path, V_SVC, kS16RequireAll, kS16RestartOnAny);
 
     if (sv->is_setup)
         return sv;
@@ -598,22 +601,25 @@ void graph_setup_all ()
     printf ("Now trying disable...\n");
     s16note_list_add (
         &notes,
-        s16note_new (N_ADMIN_REQ, A_DISABLE, s16_path_new ("a", "i"), ON_NONE));
+        s16note_new (
+            N_ADMIN_REQ, A_DISABLE, S16PathNew ("a", "i"), kS16RestartOnNone));
     processNotes ();
 
     printf ("Now trying enable again...\n");
 
     s16note_list_add (
         &notes,
-        s16note_new (N_ADMIN_REQ, A_ENABLE, s16_path_new ("a", "i"), ON_NONE));
+        s16note_new (
+            N_ADMIN_REQ, A_ENABLE, S16PathNew ("a", "i"), kS16RestartOnNone));
     processNotes ();
 
     printf ("Now trying an offline/online..\n");
 
-    s16note_list_add (
-        &notes,
-        s16note_new (
-            N_STATE_CHANGE, SC_OFFLINE, s16_path_new ("a", "i"), ON_NONE));
+    s16note_list_add (&notes,
+                      s16note_new (N_STATE_CHANGE,
+                                   SC_OFFLINE,
+                                   S16PathNew ("a", "i"),
+                                   kS16RestartOnNone));
     processNotes ();
 
     print_all ();
@@ -630,16 +636,19 @@ void vtx_notify_start (vertex_t * v, void * vreason)
             if (vtx_is_running (v))
             {
                 /* if restarton > on_error, then restart... */
-                s16_log_path (DBG, v->path, "Not bringing up as already up.\n");
-                if (reason > ON_ERROR)
+                S16LogPath (
+                    kS16LogDebug, v->path, "Not bringing up as already up.\n");
+                if (reason > kS16RestartOnError)
                 {
-                    s16_log_path (DBG, v->path, "Sending reset command?\n");
+                    S16LogPath (
+                        kS16LogDebug, v->path, "Sending reset command?\n");
                 }
             }
             else
             {
-                s16_log_path (
-                    INFO, v->path, "Bringing up because dependency went up\n");
+                S16LogPath (kS16LogInfo,
+                            v->path,
+                            "Bringing up because dependency went up\n");
                 s16note_list_add (
                     &notes,
                     s16note_new (N_STATE_CHANGE, SC_ONLINE, v->path, 0));
@@ -656,7 +665,7 @@ void vtx_notify_start (vertex_t * v, void * vreason)
 
 void vtx_notify_stop (vertex_t * v, void * vreason)
 {
-    depgroup_restarton_t reason = (intptr_t)vreason;
+    S16DependencyGroupRestartOnCondition reason = (intptr_t)vreason;
     switch (v->type)
     {
     case V_INST:
@@ -665,13 +674,14 @@ void vtx_notify_stop (vertex_t * v, void * vreason)
         if (!vtx_is_running (v))
         {
             /* if restarton > on_error, then restart... */
-            s16_log_path (DBG, v->path, "Not bringing down as already down.\n");
+            S16LogPath (
+                kS16LogDebug, v->path, "Not bringing down as already down.\n");
         }
         else
         {
-            s16_log_path (DBG,
-                          v->path,
-                          "Bringing down in response to dependency down.\n");
+            S16LogPath (kS16LogDebug,
+                        v->path,
+                        "Bringing down in response to dependency down.\n");
 
             s16note_list_add (
                 &notes,
@@ -681,16 +691,17 @@ void vtx_notify_stop (vertex_t * v, void * vreason)
 
     case V_DEPGROUP:
         /* don't propagate stops to exclude-all groups */
-        if (v->dg_type == EXCLUDE_ALL)
+        if (v->dg_type == kS16ExcludeAll)
             break;
 
-        /* if we only restart on, for example, ON_ERROR (1), and reason is only
-         * ON_RESTART (2), then we don't need to propagate it. */
-        s16_log_path (INFO,
-                      v->path,
-                      "v->Restart_on: %d < Restart: %d?\n",
-                      v->restart_on,
-                      reason);
+        /* if we only restart on, for example, kS16RestartOnError (1), and
+         * reason is only kS16RestartOnRestart (2), then we don't need to
+         * propagate it. */
+        S16LogPath (kS16LogInfo,
+                    v->path,
+                    "v->Restart_on: %d < Restart: %d?\n",
+                    v->restart_on,
+                    reason);
         if (v->restart_on < reason)
             break;
 
@@ -715,17 +726,19 @@ void vtx_notify_admin_disable (vertex_t * v, void * reason)
     switch (v->type)
     {
     case V_INST:
-        if (v->state != S_ONLINE && v->state != S_DEGRADED)
-            s16_log_path (DBG, v->path, "Not bringing down as already down.\n");
+        if (v->state != kS16StateOnline && v->state != kS16StateDegraded)
+            S16LogPath (
+                kS16LogDebug, v->path, "Not bringing down as already down.\n");
         v->to_offline = true;
         vtx_dependents_do (v, vtx_notify_admin_disable, reason);
         break;
 
     case V_DEPGROUP:
-        /* If a vertex is an EXCLUDE_ALL one, we don't mark it. Neither if the
-         * restart_on mode is ON_NONE or ON_ERROR. */
-        if (v->dg_type == EXCLUDE_ALL ||
-            (v->restart_on == ON_NONE || v->restart_on == ON_ERROR))
+        /* If a vertex is an kS16ExcludeAll one, we don't mark it. Neither if
+         * the restart_on mode is kS16RestartOnNone or kS16RestartOnError. */
+        if (v->dg_type == kS16ExcludeAll ||
+            (v->restart_on == kS16RestartOnNone ||
+             v->restart_on == kS16RestartOnError))
             return;
     case V_SVC:
         vtx_dependents_do (v, vtx_notify_admin_disable, reason);
@@ -744,8 +757,8 @@ bool vtx_can_go_down (vertex_t * v, bool root)
             return false;
     }
     /* If not root (i.e. we have been invoked by others) we object. */
-    if (v->type == V_INST && (v->state == S_ONLINE || v->state == S_DEGRADED) &&
-        !root)
+    if (v->type == V_INST &&
+        (v->state == kS16StateOnline || v->state == kS16StateDegraded) && !root)
         return false;
 
     return true;
@@ -790,20 +803,21 @@ void vtx_process_admin_req (vertex_t * v, s16note_admin_type_t type, int reason)
         v->to_offline = true;
         v->is_enabled = false;
 
-        s16_log_path (INFO,
-                      v->path,
-                      "Received administrative request to disable. Shutting "
-                      "down any dependencies first.\n");
+        S16LogPath (kS16LogInfo,
+                    v->path,
+                    "Received administrative request to disable. Shutting "
+                    "down any dependencies first.\n");
 
         vtx_dependents_do (
             v, vtx_notify_admin_disable, (void *)(intptr_t)reason);
         if (vtx_can_go_down (v, true))
-            s16_log_path (INFO,
-                          v->path,
-                          "No subnodes to deal with; can disable directly.\n");
+            S16LogPath (kS16LogInfo,
+                        v->path,
+                        "No subnodes to deal with; can disable directly.\n");
         list_foreach (vertex, &graph, it)
         {
-            vtx_offline_if_possible (it->val, (void *)(intptr_t)ON_RESTART);
+            vtx_offline_if_possible (it->val,
+                                     (void *)(intptr_t)kS16RestartOnRestart);
         }
         break;
 
@@ -812,13 +826,14 @@ void vtx_process_admin_req (vertex_t * v, s16note_admin_type_t type, int reason)
         v->to_offline = false;
         v->is_enabled = true;
 
-        s16_log_path (
-            INFO, v->path, "Received administrative request to enable.\n");
+        S16LogPath (kS16LogInfo,
+                    v->path,
+                    "Received administrative request to enable.\n");
 
         vtx_enable (v);
         break;
     default:
-        s16_log (ERR, "Admin req type not handled.\n");
+        S16Log (kS16LogError, "Admin req type not handled.\n");
     }
 }
 
@@ -829,14 +844,14 @@ void vtx_process_state_change (vertex_t * v, s16note_sc_type_t type, int reason)
     switch (type)
     {
     case SC_ONLINE:
-        s16_log_path (INFO, v->path, "-> Online.\n");
-        v->state = S_ONLINE;
+        S16LogPath (kS16LogInfo, v->path, "-> Online.\n");
+        v->state = kS16StateOnline;
         vtx_dependents_do (v, vtx_notify_start, (void *)(intptr_t)reason);
         break;
 
     case SC_OFFLINE:
-        s16_log_path (INFO, v->path, "-> Offline.\n");
-        v->state = S_OFFLINE;
+        S16LogPath (kS16LogInfo, v->path, "-> Offline.\n");
+        v->state = kS16StateOffline;
         v->to_offline = false;
         if (to_offline)
         {
@@ -853,17 +868,17 @@ void vtx_process_state_change (vertex_t * v, s16note_sc_type_t type, int reason)
         break;
 
     case SC_DISABLED:
-        s16_log_path (INFO, v->path, "-> Disabled.\n");
+        S16LogPath (kS16LogInfo, v->path, "-> Disabled.\n");
         v->to_offline = false;
         v->to_disable = false;
-        v->state = S_DISABLED;
+        v->state = kS16StateDisabled;
 
         vtx_dependents_do (v, vtx_notify_misc, (void *)(intptr_t)reason);
 
         break;
 
     default:
-        s16_log (ERR, "State change type not handled.\n");
+        S16Log (kS16LogError, "State change type not handled.\n");
     }
 }
 
@@ -876,7 +891,7 @@ void graph_process_note (s16note_t * note)
         vtx_process_state_change (
             vtx_find_by_path (note->path), note->type, note->reason);
     else
-        s16_log (ERR, "Note type not handled.\n");
+        S16Log (kS16LogError, "Note type not handled.\n");
 }
 
 #define TypeStr(x)                                                             \
@@ -892,15 +907,15 @@ void print_all ()
         if (it->val->type == V_SVC)
             sprintf (lbuf,
                      "\"%s\" [shape=cylinder] %s\n",
-                     s16_path_to_string (it->val->path),
+                     S16PathToString (it->val->path),
                      depgroup_is_satisfied (it->val, false)
                          ? "[style=filled, fillcolor=green]"
                          : "");
         else if (it->val->type == V_INST)
             sprintf (lbuf,
                      "\"%s\" [shape=component] %s\n",
-                     s16_path_to_string (it->val->path),
-                     it->val->state == S_ONLINE
+                     S16PathToString (it->val->path),
+                     it->val->state == kS16StateOnline
                          ? "[style=filled, fillcolor=green]"
                          : "");
         else if (it->val->type == V_DEPGROUP)
@@ -908,23 +923,23 @@ void print_all ()
             const char * dgts;
             switch (it->val->dg_type)
             {
-            case REQUIRE_ALL:
+            case kS16RequireAll:
                 dgts = "require-all";
                 break;
-            case REQUIRE_ANY:
+            case kS16RequireAny:
                 dgts = "require-any";
                 break;
-            case OPTIONAL_ALL:
+            case kS16OptionalAll:
                 dgts = "optional-all";
                 break;
-            case EXCLUDE_ALL:
+            case kS16ExcludeAll:
                 dgts = "exclude-all";
                 break;
             }
             sprintf (lbuf,
                      "\"%s\" [shape=note, label=\"%s\\n%s\"]\n",
-                     s16_path_to_string (it->val->path),
-                     s16_path_to_string (it->val->path),
+                     S16PathToString (it->val->path),
+                     S16PathToString (it->val->path),
                      dgts);
         }
 
@@ -937,8 +952,8 @@ void print_all ()
             char lbuf[256];
             sprintf (lbuf,
                      "\"%s\" -> \"%s\" [label=\"depends on\"];\n",
-                     s16_path_to_string (ite->val->to->path),
-                     s16_path_to_string (ite->val->from->path));
+                     S16PathToString (ite->val->to->path),
+                     S16PathToString (ite->val->from->path));
             strcat (buf, lbuf);
         }
     }

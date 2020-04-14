@@ -50,13 +50,13 @@ static void success () { printf ("Task completed successfully.\n"); }
 
 void disable (const char * spath)
 {
-    path_t * path = s16db_string_to_path (spath);
+    S16Path * path = s16db_string_to_path (spath);
     if (!path)
         fail ("Path is invalid.");
     else
     {
         int res = s16db_disable (&svcadm.h, path);
-        s16_path_destroy (path);
+        S16PathDestroy (path);
 
         if (!res)
             success ();
@@ -67,13 +67,13 @@ void disable (const char * spath)
 
 void enable (const char * spath)
 {
-    path_t * path = s16db_string_to_path (spath);
+    S16Path * path = s16db_string_to_path (spath);
     if (!path)
         fail ("Path is invalid.");
     else
     {
         int res = s16db_enable (&svcadm.h, path);
-        s16_path_destroy (path);
+        S16PathDestroy (path);
 
         if (!res)
             success ();

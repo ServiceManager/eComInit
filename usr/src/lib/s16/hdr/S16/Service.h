@@ -42,15 +42,15 @@ extern "C"
 
     typedef enum svc_state_e
     {
-        S_NONE,
-        S_UNINIT,
-        S_DISABLED,
-        S_OFFLINE,
-        S_MAINTENANCE,
-        S_ONLINE,
-        S_DEGRADED,
-        S_MAX,
-    } svc_state_t;
+        kS16StateNone,
+        kS16StateUninitialised,
+        kS16StateDisabled,
+        kS16StateOffline,
+        kS16StateMaintenance,
+        kS16StateOnline,
+        kS16StateDegraded,
+        kS16StateEnumMaximum,
+    } S16ServiceState;
 
     struct path_s
     {
@@ -59,34 +59,34 @@ extern "C"
         char * inst;
     };
 
-    S16List (path, path_t *);
+    S16ListType (path, S16Path *);
 
-    typedef enum depgroup_type_s
+    typedef enum S16DependencyGroupype_s
     {
-        REQUIRE_ANY,
-        REQUIRE_ALL,
-        OPTIONAL_ALL,
-        EXCLUDE_ALL,
-    } depgroup_type_t;
+        kS16RequireAny,
+        kS16RequireAll,
+        kS16OptionalAll,
+        kS16ExcludeAll,
+    } S16DependencyGroupType;
 
     typedef enum depgroup_restarton_s
     {
-        ON_NONE,
-        ON_ERROR,
-        ON_RESTART,
-        ON_REFRESH,
-        ON_ANY,
-    } depgroup_restarton_t;
+        kS16RestartOnNone,
+        kS16RestartOnError,
+        kS16RestartOnRestart,
+        kS16RestartOnRefresh,
+        kS16RestartOnAny,
+    } S16DependencyGroupRestartOnCondition;
 
     typedef struct depgroup_s
     {
         char * name;
-        depgroup_type_t type;
-        depgroup_restarton_t restart_on;
+        S16DependencyGroupType type;
+        S16DependencyGroupRestartOnCondition restart_on;
         path_list_t paths;
-    } depgroup_t;
+    } S16DependencyGroup;
 
-    S16List (depgroup, depgroup_t *);
+    S16ListType (depgroup, S16DependencyGroup *);
 
     typedef struct property_s
     {
@@ -103,9 +103,9 @@ extern "C"
             long i;
             char * s;
         } value;
-    } property_t;
+    } S16Property;
 
-    S16List (prop, property_t *);
+    S16ListType (prop, S16Property *);
 
     /* TODO: think about how delegated restarters may want their methods to
      * look. */
@@ -114,28 +114,28 @@ extern "C"
         char * name;
         // char * exec;
         prop_list_t props;
-    } method_t;
+    } S16ServiceMethod;
 
-    S16List (meth, method_t *);
+    S16ListType (meth, S16ServiceMethod *);
 
     struct svc_instance_s
     {
-        path_t * path;
+        S16Path * path;
 
         prop_list_t props;
         meth_list_t meths;
         depgroup_list_t depgroups;
 
         bool enabled;
-        svc_state_t state;
+        S16ServiceState state;
     };
 
-    S16List (inst, svc_instance_t *);
+    S16ListType (inst, S16ServiceInstance *);
 
     struct svc_s
     {
         /* Each service has a path. */
-        path_t * path;
+        S16Path * path;
         /* It also has a default instance. If unset, the default is 'default';
          * and if no instance named 'default' exists, then one is created. */
         char * def_inst;
@@ -149,80 +149,83 @@ extern "C"
         depgroup_list_t depgroups;
 
         /* and finally, a state. */
-        svc_state_t state;
+        S16ServiceState state;
     };
 
-    S16List (svc, svc_t *);
+    S16ListType (svc, S16Service *);
 
     /* State functions. */
     /* Gets string describing state. */
-    const char * s16_state_to_string (svc_state_t state);
+    const char * S16StateToString (S16ServiceState state);
 
     /* Path functions */
     /* Creates a new path. */
-    path_t * s16_path_new (const char * svc, const char * inst);
+    S16Path * S16PathNew (const char * svc, const char * inst);
     /* Destroys a path. */
-    void s16_path_destroy (path_t * path);
+    void S16PathDestroy (S16Path * path);
     /* Copies a path. */
-    path_t * s16_path_copy (const path_t * path);
+    S16Path * S16PathCopy (const S16Path * path);
     /* Tests whether two paths are equal. */
-    bool s16_path_equal (const path_t * a, const path_t * b);
+    bool S16PathEqual (const S16Path * a, const S16Path * b);
     /* Tests whether a path leads to an instance. */
-    bool s16_path_is_inst (const path_t * p);
+    bool S16PathIsInstance (const S16Path * p);
     /* Creates a new path to the parent service underlying an instance path. */
-    path_t * s16_svc_path_from_inst_path (const path_t * path);
+    S16Path * S16ServicePathFromInstancePath (const S16Path * path);
     /* Creates a string path from a path. */
-    char * s16_path_to_string (const path_t * path);
+    char * S16PathToString (const S16Path * path);
 
     /* Retrieves the path of the master restarter. */
-    path_t * s16_path_restartd ();
+    S16Path * S16PathOfMainRestarter ();
     /* Retrieves the path of the service repository. */
-    path_t * s16_path_configd ();
+    S16Path * S16PathOfRepository ();
     /* Retrieves the path of the graphing service. */
-    path_t * s16_path_graphd ();
+    S16Path * S16PathOfGrapher ();
 
     /* Dependency-group functions */
     /* Destroys a depgroup. */
-    void s16_depgroup_destroy (depgroup_t * depgroup);
+    void s16_depgroup_destroy (S16DependencyGroup * depgroup);
     /* Makes a deep copy of a depgroup. */
-    depgroup_t * s16_depgroup_copy (const depgroup_t * depgroup);
+    S16DependencyGroup *
+    s16_depgroup_copy (const S16DependencyGroup * depgroup);
     /* Returns true if b's name matches that of a. */
-    bool s16_depgroup_name_equal (const depgroup_t * a, const depgroup_t * b);
+    bool s16_depgroup_name_equal (const S16DependencyGroup * a,
+                                  const S16DependencyGroup * b);
 
     /* Property functions */
     /* Destroys a property. */
-    void s16_prop_destroy (property_t * prop);
+    void s16_prop_destroy (S16Property * prop);
     /* Makes a deep copy of a property. */
-    property_t * s16_prop_copy (const property_t * prop);
+    S16Property * s16_prop_copy (const S16Property * prop);
     /* Returns true if b's name matches that of a. */
-    bool s16_prop_name_equal (const property_t * a, const property_t * b);
+    bool s16_prop_name_equal (const S16Property * a, const S16Property * b);
 
     /* Method functions */
     /* Destroys a method. */
-    void s16_meth_destroy (method_t * meth);
+    void s16_meth_destroy (S16ServiceMethod * meth);
     /* Makes a deep copy of a method. */
-    method_t * s16_meth_copy (const method_t * meth);
+    S16ServiceMethod * s16_meth_copy (const S16ServiceMethod * meth);
     /* Returns true if b's name matches that of a. */
-    bool s16_meth_name_equal (const method_t * a, const method_t * b);
+    bool s16_meth_name_equal (const S16ServiceMethod * a,
+                              const S16ServiceMethod * b);
 
     /* Instance functions */
     /* Destroys an instance. */
-    void s16_inst_destroy (svc_instance_t * inst);
+    void s16_inst_destroy (S16ServiceInstance * inst);
     /* Makes a deep copy of a instance. */
-    svc_instance_t * s16_inst_copy (const svc_instance_t * inst);
+    S16ServiceInstance * s16_inst_copy (const S16ServiceInstance * inst);
     /* Returns true if b's name matches that of a. */
-    bool s16_inst_name_equal (const svc_instance_t * a,
-                              const svc_instance_t * b);
+    bool s16_inst_name_equal (const S16ServiceInstance * a,
+                              const S16ServiceInstance * b);
 
     /* Service functions */
     /* Allocates and initialises fields of a new service.*/
-    svc_t * s16_svc_alloc ();
+    S16Service * s16_svc_alloc ();
     /* Makes a deep copy of a service. */
-    svc_t * s16_svc_copy (const svc_t * svc);
+    S16Service * s16_svc_copy (const S16Service * svc);
     /* Destroys a service. */
-    void s16_svc_destroy (svc_t * svc);
+    void s16_svc_destroy (S16Service * svc);
     /* Returns true if b's name matches that of a. */
-    bool s16_svc_name_equal (const svc_t * a, const svc_t * b);
+    bool s16_svc_name_equal (const S16Service * a, const S16Service * b);
 
 #ifdef __cplusplus
 }

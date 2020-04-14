@@ -33,11 +33,11 @@ struct svcs_s
 
 struct svcs_s svcs;
 
-static void print_svc (svc_state_t state, path_t * path)
+static void print_svc (S16ServiceState state, S16Path * path)
 {
-    const char * sstate = s16_state_to_string (state);
+    const char * sstate = S16StateToString (state);
     size_t need_t = strlen (sstate) < 8;
-    char * spath = s16_path_to_string (path);
+    char * spath = S16PathToString (path);
 
     printf ("%s%s\tDate\t\t%s\n", sstate, need_t ? "\t" : "", spath);
 

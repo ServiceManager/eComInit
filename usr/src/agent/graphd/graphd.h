@@ -39,30 +39,31 @@ typedef enum
 typedef struct vertex_s vertex_t;
 typedef struct edge_s edge_t;
 
-S16List (vertex, vertex_t *);
-S16List (edge, edge_t *);
+S16ListType (vertex, vertex_t *);
+S16ListType (edge, edge_t *);
 
 /* Vertex */
 struct vertex_s
 {
-    path_t * path;
+    S16Path * path;
 
     /* Type of vertex */
     vertex_type_t type;
 
     /* Dependency grouping type.
-     * REQUIRE_ALL for instances (they need all their depgroups up.)
-     * REQUIRE_ANY for services (they need at least one instance up - for now.)
+     * kS16RequireAll for instances (they need all their depgroups up.)
+     * kS16RequireAny for services (they need at least one instance up - for
+     * now.)
      */
-    depgroup_type_t dg_type;
+    S16DependencyGroupType dg_type;
     /* Restart-on type. */
-    depgroup_restarton_t restart_on;
+    S16DependencyGroupRestartOnCondition restart_on;
 
     edge_list_t dependencies;
     edge_list_t dependents;
 
     /* State of vertex */
-    svc_state_t state;
+    S16ServiceState state;
 
     /* Has this vertex been set up with its dependencies? */
     bool is_setup : 1;
@@ -82,7 +83,7 @@ struct edge_s
 /* Initialises the graph engine. */
 void graph_init ();
 /* Adds a new service to the graph. */
-vertex_t * graph_install_service (svc_t * svc);
+vertex_t * graph_install_service (S16Service * svc);
 /* Sets up all vertices */
 void graph_setup_all ();
 /* Processes incoming notes. */

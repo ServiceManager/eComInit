@@ -50,20 +50,20 @@ typedef enum
 
 typedef enum
 {
-    US_NONE,
-    US_UNINITIALISED,
+    UkS16StateNone,
+    UkS16StateUninitialisedIALISED,
     US_DISIABLED,
-    US_OFFLINE,
+    UkS16StateOffline,
     US_PRESTART,
     US_START,
     US_POSTSTART,
-    US_ONLINE,
+    UkS16StateOnline,
     US_EXITED, /* for Oneshot services */
     US_STOP,
     US_STOPTERM,
     US_STOPKILL,
     US_POSTSTOP,
-    US_MAINTENANCE,
+    UkS16StateMaintenance,
 } UnitState;
 
 typedef enum
@@ -82,12 +82,12 @@ typedef struct
     const char * exec;
 } UnitMethod;
 
-S16List (UnitMethod, UnitMethod *);
+S16ListType (UnitMethod, UnitMethod *);
 
 typedef struct
 {
     /* Path of this instance. */
-    path_t * path;
+    S16Path * path;
     UnitType type;
     UnitRestart to_restart;
     bool is_enabled;
@@ -119,10 +119,10 @@ typedef struct
     unsigned meth_restart_timer_id;
 } Unit;
 
-S16List (Unit, Unit *);
+S16ListType (Unit, Unit *);
 
 /* Adds a unit for the given path. If it already exists, returns that unit. */
-Unit * unit_add (path_t * path);
+Unit * unit_add (S16Path * path);
 /* Configures the unit with fresh data from the handle. */
 void unit_setup (Unit * unit);
 

@@ -36,8 +36,8 @@
 #include "systemd/sd-daemon.h"
 
 #include "S16/JSONRPCClient.h"
-#include "S16/Repository_Private.h"
 #include "S16/JSONRPCServer.h"
+#include "S16/Repository_Private.h"
 
 #include "configd.h"
 
@@ -66,7 +66,7 @@ int main (int argc, char * argv[])
 
     /* make sure repo socket deleted after exit */
     atexit (clean_exit);
-    s16_log_init ("Service Repository");
+    S16LogInit ("Service Repository");
 
     if ((listener_s = socket (AF_UNIX, SOCK_STREAM, 0)) == -1)
     {

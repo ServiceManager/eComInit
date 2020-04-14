@@ -43,7 +43,7 @@ int s16db_hdl_new (s16db_hdl_t * hdl)
         exit (-1);
     }
 
-    s16_cloexec (hdl->fd);
+    S16CloseOnExec (hdl->fd);
 
     memset (&sun, 0, sizeof (struct sockaddr_un));
     sun.sun_family = AF_UNIX;
@@ -76,13 +76,13 @@ const svc_list_t * s16db_get_all_services (s16db_hdl_t * hdl)
     return &hdl->scope.svcs;
 }
 
-s16db_lookup_result_t s16db_lookup_path (s16db_hdl_t * hdl, path_t * path)
+s16db_lookup_result_t s16db_lookup_path (s16db_hdl_t * hdl, S16Path * path)
 {
     return s16db_lookup_path_in_scope (hdl->scope, path);
 }
 
 s16db_lookup_result_t s16db_lookup_path_in_scope (s16db_scope_t scope,
-                                                  path_t * path)
+                                                  S16Path * path)
 {
     s16db_lookup_result_t res;
 
@@ -107,7 +107,7 @@ s16db_lookup_result_t s16db_lookup_path_in_scope (s16db_scope_t scope,
 
     if (path->svc && path->inst)
     {
-        svc_t * svc = res.s;
+        S16Service * svc = res.s;
         res.i = NULL;
         res.type = INSTANCE;
 
@@ -119,10 +119,10 @@ s16db_lookup_result_t s16db_lookup_path_in_scope (s16db_scope_t scope,
 
         if (!res.i)
         {
-            s16_log (INFO,
-                     "Failed to find instance %s of service %s!\n",
-                     path->inst,
-                     path->svc);
+            S16Log (kS16LogInfo,
+                    "Failed to find instance %s of service %s!\n",
+                    path->inst,
+                    path->svc);
             return res;
         }
     }
@@ -144,11 +144,12 @@ s16db_lookup_result_t s16db_lookup_path_in_scope (s16db_scope_t scope,
 
         if (!cnt)
         {
-            s16_log (INFO, "Failed to find instance %s\n", path->inst);
+            S16Log (kS16LogInfo, "Failed to find instance %s\n", path->inst);
         }
         else if (cnt > 1)
         {
-            s16_log (INFO, "Too many instances found for %s\n", path->inst);
+            S16Log (
+                kS16LogInfo, "Too many instances found for %s\n", path->inst);
         }
     }
 
@@ -156,18 +157,18 @@ s16db_lookup_result_t s16db_lookup_path_in_scope (s16db_scope_t scope,
 }
 
 s16note_t * s16note_new (s16note_type_t note_type, int type,
-                         const path_t * path, int reason)
+                         const S16Path * path, int reason)
 {
     s16note_t * note = malloc (sizeof (s16note_t));
     note->note_type = note_type;
     note->type = type;
-    note->path = s16_path_copy (path);
+    note->path = S16PathCopy (path);
     note->reason = reason;
     return note;
 }
 
 void s16note_destroy (s16note_t * note)
 {
-    s16_path_destroy (note->path);
+    S16PathDestroy (note->path);
     free (note);
 }

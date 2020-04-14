@@ -65,9 +65,9 @@
 
 #endif
 
-#include "manager.h"
 #include "S16/Repository.h"
 #include "S16/RestarterServices.h"
+#include "manager.h"
 
 const int NOTE_RREQ = 18;
 
@@ -100,7 +100,8 @@ void repo_retry_cb (long timer, void * unused)
     {
         perror ("Failed to connect to repository");
         if ((manager.repo_retry_delay = manager.repo_retry_delay * 2) > 3000)
-            s16_log (ERR, "Repeatedly failed to connect to repository.\n");
+            S16Log (kS16LogError,
+                    "Repeatedly failed to connect to repository.\n");
         else
         {
             manager.repo_retry_timer = timerset_add (
@@ -109,7 +110,7 @@ void repo_retry_cb (long timer, void * unused)
     }
     else
     {
-        s16_log (DBG, "Connected to the repository.\n");
+        S16Log (kS16LogDebug, "Connected to the repository.\n");
         manager.repo_up = true;
     }
 }
@@ -142,13 +143,13 @@ Unit * manager_find_unit_for_pid (pid_t pid)
 /* Sets up a manifest-import service to read services into the repository. */
 void setup_manifest_import ()
 {
-    Unit * configd = unit_add (s16_path_configd ());
+    Unit * configd = unit_add (S16PathOfRepository ());
     s16note_t * note =
         s16note_new (N_RESTARTER_REQ, RR_START, configd->path, 0);
 
     configd->type = U_ONESHOT;
     configd->methods[UM_START] = "/opt/s16/etc/s16/method/manifest-import";
-    configd->state = US_OFFLINE;
+    configd->state = UkS16StateOffline;
 
     unit_msg (configd, note);
     s16note_destroy (note);
@@ -159,14 +160,14 @@ int main (int argc, char * argv[])
     bool run = true;
     struct timespec tmout = {0, 0}; /* return at once initially */
 
-    s16_log_init ("Master Restarter");
+    S16LogInit ("Master Restarter");
 
     atexit (clean_exit);
 
     manager.kq = kqueue ();
     if (manager.kq == -1)
         perror ("KQueue: Failed to open\n");
-    s16_cloexec (manager.kq);
+    S16CloseOnExec (manager.kq);
 
     sd_notify_srv_setup (manager.kq);
 
@@ -179,19 +180,19 @@ int main (int argc, char * argv[])
         manager.repo_up = false;
     }
 
-    s16_handle_signal (manager.kq, SIGHUP);
-    s16_handle_signal (manager.kq, SIGCHLD);
-    s16_handle_signal (manager.kq, SIGINT);
+    S16HandleSignalWithKQueue (manager.kq, SIGHUP);
+    S16HandleSignalWithKQueue (manager.kq, SIGCHLD);
+    S16HandleSignalWithKQueue (manager.kq, SIGINT);
 
     if (!manager.repo_up)
     {
-        Unit * configd = unit_add (s16_path_configd ());
+        Unit * configd = unit_add (S16PathOfRepository ());
         s16note_t * note =
             s16note_new (N_RESTARTER_REQ, RR_START, configd->path, 0);
 
         configd->type = U_NOTIFY;
         configd->methods[UM_START] = "/opt/s16/libexec/s16.configd";
-        configd->state = US_OFFLINE;
+        configd->state = UkS16StateOffline;
 
         unit_msg (configd, note);
         s16note_destroy (note);

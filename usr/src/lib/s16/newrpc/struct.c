@@ -33,12 +33,12 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "nv.h"
 #include "S16/List.h"
 #include "S16/NVRPC.h"
+#include "nv.h"
 #include "ucl.h"
 
-S16List (void, void *);
+S16ListType (void, void *);
 
 const char * s16r_kind_str[S16R_KMAX] = {
     "String", "Boolean", "Int", "Struct", "List", "Right"};

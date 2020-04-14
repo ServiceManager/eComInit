@@ -103,15 +103,15 @@ extern "C"
         /* The particular note type for this note_type. */
         int type;
         /* The affected instance. */
-        path_t * path;
+        S16Path * path;
         /* The relevant reason for this note_type. */
         int reason;
     } s16note_t;
 
-    S16List (s16note, s16note_t *);
+    S16ListType (s16note, s16note_t *);
 
     s16note_t * s16note_new (s16note_type_t note_type, int type,
-                             const path_t * path, int reason);
+                             const S16Path * path, int reason);
     void s16note_destroy (s16note_t * note);
 
 #ifdef __cplusplus

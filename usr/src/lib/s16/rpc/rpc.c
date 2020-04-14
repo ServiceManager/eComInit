@@ -56,9 +56,9 @@ typedef struct
     /* Parameter count */
     size_t nparams;
     void * fun;
-} s16rpc_method_t;
+} s16rpc_S16ServiceMethod;
 
-S16List (s16rpc_method, s16rpc_method_t *);
+S16ListType (s16rpc_method, s16rpc_S16ServiceMethod *);
 
 typedef struct
 {
@@ -73,7 +73,7 @@ typedef struct
     char * cur_msg_buf;
 } s16rpc_conn_t;
 
-S16List (s16rpc_conn, s16rpc_conn_t *);
+S16ListType (s16rpc_conn, s16rpc_conn_t *);
 
 struct s16rpc_srv_s
 {
@@ -113,7 +113,7 @@ bool match_fd (s16rpc_conn_t * a, int fd)
     return false;
 }
 
-bool match_method (s16rpc_method_t * meth, const char * txt)
+bool match_method (s16rpc_S16ServiceMethod * meth, const char * txt)
 {
     return !strcmp (meth->name, txt);
 }
@@ -232,7 +232,7 @@ void handle_msg (s16rpc_srv_t * srv, s16rpc_conn_t * conn)
         size_t nparams = params ? ucl_array_size (params) : 0;
         s16rpc_data_t dat;
 
-        s16rpc_method_t * cand;
+        s16rpc_S16ServiceMethod * cand;
 
         if (!method || !txt)
         {
@@ -372,7 +372,7 @@ void s16rpc_investigate_kevent (s16rpc_srv_t * srv, struct kevent * ev)
 void s16rpc_srv_register_method (s16rpc_srv_t * srv, const char * name,
                                  size_t nparams, s16rpc_fun_t fun)
 {
-    s16rpc_method_t * meth = malloc (sizeof (s16rpc_method_t));
+    s16rpc_S16ServiceMethod * meth = malloc (sizeof (s16rpc_S16ServiceMethod));
     meth->name = name;
     meth->nparams = nparams;
     meth->fun = fun;
@@ -418,7 +418,7 @@ char * recv_text (int fd)
 
     if (len > MAX_LEN_MSG)
     {
-        s16_log (ERR, "ignoring message of excessive length\n");
+        S16Log (kS16LogError, "ignoring message of excessive length\n");
         buf = strdup ("INVALID-MESSAGE");
     }
     else

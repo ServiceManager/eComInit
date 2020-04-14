@@ -37,7 +37,7 @@ extern "C"
 {
 #endif
 
-    S16List (pid, pid_t);
+    S16ListType (pid, pid_t);
 
     /* process tracking structures */
     typedef enum
