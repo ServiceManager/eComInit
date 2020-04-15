@@ -35,32 +35,33 @@ typedef struct
 {
     const char * name;
     void * fun;
-    s16r_message_signature * sig;
+    S16NVRPCMessageSignature * sig;
 } S16JSONRPCMethod;
 
 S16ListType (s16r_method, S16JSONRPCMethod *);
 
-struct s16r_srv_t
+struct S16NVRPCServer
 {
     /* custom data */
     void * extra;
     s16r_method_list_t meths;
 };
 
-typedef void * (*s16r_fun0_t) (s16r_data_t *);
-typedef void * (*s16r_fun1_t) (s16r_data_t *, const void *);
-typedef void * (*s16r_fun2_t) (s16r_data_t *, const void *, const void *);
-typedef void * (*s16r_fun3_t) (s16r_data_t *, const void *, const void *,
+typedef void * (*s16r_fun0_t) (S16NVRPCCallContext *);
+typedef void * (*s16r_fun1_t) (S16NVRPCCallContext *, const void *);
+typedef void * (*s16r_fun2_t) (S16NVRPCCallContext *, const void *,
                                const void *);
-typedef void * (*s16r_fun4_t) (s16r_data_t *, const void *, const void *,
+typedef void * (*s16r_fun3_t) (S16NVRPCCallContext *, const void *,
                                const void *, const void *);
+typedef void * (*s16r_fun4_t) (S16NVRPCCallContext *, const void *,
+                               const void *, const void *, const void *);
 
 static bool matchMeth (S16JSONRPCMethod * meth, void * str)
 {
     return !strcmp (meth->sig->name, str);
 }
 
-static S16JSONRPCMethod * findMeth (s16r_srv_t * srv, const char * name)
+static S16JSONRPCMethod * findMeth (S16NVRPCServer * srv, const char * name)
 {
     s16r_method_list_it it =
         s16r_method_list_find (&srv->meths, matchMeth, (void *)name);
@@ -80,12 +81,13 @@ nvlist_t * s16r_make_request (const char * meth_name, nvlist_t * params)
     return req;
 }
 
-void * s16r_dispatch_fun (s16r_data_t * dat, S16JSONRPCMethod * meth,
+void * s16r_dispatch_fun (S16NVRPCCallContext * dat, S16JSONRPCMethod * meth,
                           nvlist_t * nvparams)
 {
     void ** params;
 
-    if (deserialiseMsgArgs (nvparams, meth->sig, (void **)&params))
+    if (S16NVRPCMessageSignatureDeserialiseArguments (
+            nvparams, meth->sig, (void **)&params))
     {
         printf ("Error!\n");
         return NULL;
@@ -112,7 +114,7 @@ void * s16r_dispatch_fun (s16r_data_t * dat, S16JSONRPCMethod * meth,
 #undef Param
 }
 
-static nvlist_t * create_error (s16r_errcode_t code, const char * message,
+static nvlist_t * create_error (S16NVRPCErrorCode code, const char * message,
                                 size_t data_len, void * data)
 {
     nvlist_t * nverr = nvlist_create (0);
@@ -123,14 +125,14 @@ static nvlist_t * create_error (s16r_errcode_t code, const char * message,
     return nverr;
 }
 
-nvlist_t * s16r_handle_request (s16r_srv_t * srv, nvlist_t * req)
+nvlist_t * s16r_handle_request (S16NVRPCServer * srv, nvlist_t * req)
 {
     int id;
     const char * methname;
     bool isNote = false;
 
     S16JSONRPCMethod * meth;
-    s16r_data_t * dat;
+    S16NVRPCCallContext * dat;
     nvlist_t * params;
     void * result;
 
@@ -179,8 +181,9 @@ nvlist_t * s16r_handle_request (s16r_srv_t * srv, nvlist_t * req)
     return response;
 }
 
-void s16r_srv_register_method (s16r_srv_t * srv, s16r_message_signature * sig,
-                               s16r_fun_t fun)
+void S16NVRPCServerRegisterMethod (S16NVRPCServer * srv,
+                                   S16NVRPCMessageSignature * sig,
+                                   S16NVRPCImplementationFn fun)
 {
     S16JSONRPCMethod * meth = malloc (sizeof (*meth));
     meth->fun = fun;
@@ -188,9 +191,9 @@ void s16r_srv_register_method (s16r_srv_t * srv, s16r_message_signature * sig,
     s16r_method_list_add (&srv->meths, meth);
 }
 
-s16r_srv_t * s16r_srv_new (void * extra)
+S16NVRPCServer * S16NVRPCServerNew (void * extra)
 {
-    s16r_srv_t * srv = malloc (sizeof (*srv));
+    S16NVRPCServer * srv = malloc (sizeof (*srv));
 
     srv->extra = extra;
     srv->meths = s16r_method_list_new ();
@@ -210,7 +213,7 @@ typedef struct
     intptr_t b;
 } argStruct;
 
-s16r_message_signature testMethSig = {
+S16NVRPCMessageSignature testMethSig = {
     .name = "TestMeth",
     .rtype = {.kind = S16R_KSTRING},
     .nargs = 2,
@@ -220,10 +223,10 @@ s16r_message_signature testMethSig = {
 
 void testIt ()
 {
-    s16r_srv_t * srv = s16r_srv_new (NULL);
+    S16NVRPCServer * srv = S16NVRPCServerNew (NULL);
     nvlist_t *req = nvlist_create (0), *params = nvlist_create (0), *res = NULL;
 
-    s16r_srv_register_method (srv, &testMethSig, testFun);
+    S16NVRPCServerRegisterMethod (srv, &testMethSig, testFun);
 
     nvlist_add_string (params, "argA", "Hello");
     nvlist_add_string (params, "argB", "World");
@@ -233,5 +236,5 @@ void testIt ()
 
     res = s16r_handle_request (srv, req);
 
-    printf ("%s\n", ucl_object_emit (nvlist_to_ucl (res), UCL_EMIT_JSON));
+    printf ("%s\n", ucl_object_emit (S16NVRPCNVListToUCL (res), UCL_EMIT_JSON));
 }

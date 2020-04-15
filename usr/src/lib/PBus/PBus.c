@@ -41,7 +41,7 @@ typedef void * (*PB4ParamFun) (PBusObject *, PBusInvocationContext *,
                                const void *, const void *, const void *,
                                const void *);
 
-s16r_message_signature msgRecvSig = {
+S16NVRPCMessageSignature msgRecvSig = {
     .rtype = {.kind = S16R_KNVLIST},
     .nargs = 2,
     .args = {{.name = "fromBusname", .type = {.kind = S16R_KSTRING}},
@@ -61,7 +61,8 @@ static void * dispatchFun (PBusObject * self, PBusInvocationContext * ctx,
     void * res;
     void ** params;
 
-    if (deserialiseMsgArgs (nvparams, meth->messageSignature, (void **)&params))
+    if (S16NVRPCMessageSignatureDeserialiseArguments (
+            nvparams, meth->messageSignature, (void **)&params))
     {
         printf ("Error deserialising message args!\n");
         return NULL;
@@ -99,7 +100,7 @@ static void * dispatchFun (PBusObject * self, PBusInvocationContext * ctx,
     }
 #undef Param
 
-    destroyMsgArgs (params, meth->messageSignature);
+    S16NVRPCMessageSignatureDestroyArguments (params, meth->messageSignature);
     return res;
 }
 

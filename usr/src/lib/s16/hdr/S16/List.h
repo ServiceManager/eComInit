@@ -338,7 +338,7 @@ extern "C"
 /* New API? */
 #define LL_each2(name, list, as) list_foreach (name, list, as)
 #define LL_each(list, as)                                                      \
-    for (__typeof__((list)->List) tmp, as = list_begin (list);                 \
+    for (__typeof__ ((list)->List) tmp, as = list_begin (list);                \
          (as != NULL) && (tmp = list_next (as), list);                         \
          as = tmp)
 #define LL_empty(list) (((list)->List) == NULL)

@@ -44,7 +44,7 @@ extern "C"
      *
      * Note that fromBusname is always set NULL for a direct connection.
      */
-    extern s16r_message_signature msgRecvSig;
+    extern S16NVRPCMessageSignature msgRecvSig;
 
     /*Returns: struct { error: number, result: variable } SendResult;
 

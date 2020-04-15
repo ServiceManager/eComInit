@@ -40,16 +40,16 @@
 
 S16ListType (void, void *);
 
-const char * s16r_kind_str[S16R_KMAX] = {
+const char * S16NVRPCTypeKind_str[S16R_KMAX] = {
     "String", "Boolean", "Int", "Struct", "List", "Right"};
 
 void serialise (nvlist_t * nvl, const char * name, void ** src,
-                s16r_type * field);
+                S16NVRPCType * field);
 
-nvlist_t * serialiseStruct (void * src, s16r_struct_description * desc)
+nvlist_t * S16NVRPCStructSerialise (void * src, S16NVRPCStruct * desc)
 {
     nvlist_t * nvl = nvlist_create (0);
-    s16r_field_description * field;
+    S16NVRPCField * field;
 
     for (int i = 0; (field = &desc->fields[i]) && field->name; i++)
     {
@@ -60,7 +60,7 @@ nvlist_t * serialiseStruct (void * src, s16r_struct_description * desc)
     return nvl;
 }
 
-nvlist_t * serialiseList (void * src, s16r_type * type)
+nvlist_t * serialiseList (void * src, S16NVRPCType * type)
 {
     nvlist_t * nvl = nvlist_create (0);
     char namebuf[8];
@@ -80,7 +80,7 @@ nvlist_t * serialiseList (void * src, s16r_type * type)
  * @nvl, under the name @name.
  */
 void serialise (nvlist_t * nvl, const char * name, void ** src,
-                s16r_type * type)
+                S16NVRPCType * type)
 {
     switch (type->kind)
     {
@@ -101,7 +101,8 @@ void serialise (nvlist_t * nvl, const char * name, void ** src,
         break;
 
     case S16R_KSTRUCT:
-        nvlist_move_nvlist (nvl, name, serialiseStruct (*src, type->sdesc));
+        nvlist_move_nvlist (
+            nvl, name, S16NVRPCStructSerialise (*src, type->sdesc));
         break;
 
     case S16R_KLIST:
@@ -126,11 +127,11 @@ FDs is also possible. We should consider implementing in LibS16 some kind of
 resource pools feature, where we can release the lot if something goes
 wrong. */
 
-int deserialiseList (nvlist_t * nvl, s16r_type * type, void ** dest);
-int deserialiseStruct (nvlist_t * nvl, s16r_struct_description * desc,
-                       void ** dest);
+int deserialiseList (nvlist_t * nvl, S16NVRPCType * type, void ** dest);
+int S16NVRPCStructDeserialise (nvlist_t * nvl, S16NVRPCStruct * desc,
+                               void ** dest);
 
-int deserialiseMember (nvlist_t * nvl, const char * name, s16r_type * type,
+int deserialiseMember (nvlist_t * nvl, const char * name, S16NVRPCType * type,
                        void ** dest)
 {
     int err = -1;
@@ -162,7 +163,7 @@ int deserialiseMember (nvlist_t * nvl, const char * name, s16r_type * type,
 
     case S16R_KSTRUCT:
         /* 'Take' cannot be used here. */
-        err = deserialiseStruct (
+        err = S16NVRPCStructDeserialise (
             (nvlist_t *)nvlist_get_nvlist (nvl, name), type->sdesc, dest);
         if (err)
             goto err;
@@ -191,10 +192,10 @@ err:
     return err;
 }
 
-int deserialiseStruct (nvlist_t * nvl, s16r_struct_description * desc,
-                       void ** dest)
+int S16NVRPCStructDeserialise (nvlist_t * nvl, S16NVRPCStruct * desc,
+                               void ** dest)
 {
-    s16r_field_description * field;
+    S16NVRPCField * field;
     void * struc = malloc (desc->len);
 
     for (int i = 0; (field = &desc->fields[i]) && field->name; i++)
@@ -212,7 +213,7 @@ int deserialiseStruct (nvlist_t * nvl, s16r_struct_description * desc,
     return 0;
 }
 
-int deserialiseList (nvlist_t * nvl, s16r_type * type, void ** dest)
+int deserialiseList (nvlist_t * nvl, S16NVRPCType * type, void ** dest)
 {
     const char * name;
     void * cookie = NULL;
@@ -233,10 +234,10 @@ int deserialiseList (nvlist_t * nvl, s16r_type * type, void ** dest)
     return 0;
 }
 
-int deserialiseMsgArgs (nvlist_t * nvl, s16r_message_signature * desc,
-                        void ** dest)
+int S16NVRPCMessageSignatureDeserialiseArguments (
+    nvlist_t * nvl, S16NVRPCMessageSignature * desc, void ** dest)
 {
-    s16r_message_arg_signature * field;
+    S16NVRPCMessageParameter * field;
     void ** struc = malloc (sizeof (void *) * desc->nargs);
 
     for (int i = 0; (field = &desc->args[i]) && field->name; i++)
@@ -250,11 +251,11 @@ int deserialiseMsgArgs (nvlist_t * nvl, s16r_message_signature * desc,
     return 0;
 }
 
-void destroy (void ** src, s16r_type * field);
+void destroy (void ** src, S16NVRPCType * field);
 
-void destroyStruct (void * src, s16r_struct_description * desc)
+void destroyStruct (void * src, S16NVRPCStruct * desc)
 {
-    s16r_field_description * field;
+    S16NVRPCField * field;
 
     for (int i = 0; (field = &desc->fields[i]) && field->name; i++)
     {
@@ -263,15 +264,16 @@ void destroyStruct (void * src, s16r_struct_description * desc)
     }
 }
 
-void destroyList (void * src, s16r_type * type)
+void destroyList (void * src, S16NVRPCType * type)
 {
     LL_each ((void_list_t *)src, el) { destroy (&el->val, type); }
     void_list_destroy ((void_list_t *)src);
 }
 
-void destroyMsgArgs (void ** src, s16r_message_signature * desc)
+void S16NVRPCMessageSignatureDestroyArguments (void ** src,
+                                               S16NVRPCMessageSignature * desc)
 {
-    s16r_message_arg_signature * field;
+    S16NVRPCMessageParameter * field;
 
     for (int i = 0; (field = &desc->args[i]) && field->name; i++)
     {
@@ -281,7 +283,7 @@ void destroyMsgArgs (void ** src, s16r_message_signature * desc)
     free (src);
 }
 
-void destroy (void ** src, s16r_type * type)
+void destroy (void ** src, S16NVRPCType * type)
 {
     switch (type->kind)
     {
@@ -310,7 +312,7 @@ void destroy (void ** src, s16r_type * type)
     }
 }
 
-ucl_object_t * nvlist_to_ucl (const nvlist_t * nvl)
+ucl_object_t * S16NVRPCNVListToUCL (const nvlist_t * nvl)
 {
     ucl_object_t * obj = ucl_object_typed_new (UCL_OBJECT);
     const char * name;
@@ -351,7 +353,7 @@ ucl_object_t * nvlist_to_ucl (const nvlist_t * nvl)
         case NV_TYPE_NVLIST:
             ucl_object_insert_key (
                 obj,
-                nvlist_to_ucl (nvlist_get_nvlist (nvl, name)),
+                S16NVRPCNVListToUCL (nvlist_get_nvlist (nvl, name)),
                 name,
                 0,
                 false);

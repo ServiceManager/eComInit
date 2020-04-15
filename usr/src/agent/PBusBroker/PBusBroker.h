@@ -57,9 +57,9 @@ extern "C"
         int aKQ;
 
         PBusClient_list_t aClients;
-    } PBusContext;
+    } PBusInvocationContext;
 
-    extern PBusContext pbctx;
+    extern PBusInvocationContext pbctx;
 
 #ifdef __cplusplus
 }

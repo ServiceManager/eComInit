@@ -30,7 +30,7 @@
 #include "PBus/PBus.h"
 #include "PBus_priv.h"
 
-s16r_message_signature testMethSig = {
+S16NVRPCMessageSignature testMethSig = {
     .name = "TestMeth",
     .raw = false,
     .rtype = {.kind = S16R_KSTRING},
@@ -94,7 +94,8 @@ ATF_TC_BODY (send_message, tc)
 
     res = findReceiver_root (
         srv, "a/b/c", "pbus:/system/testSvc", "TestMeth", params);
-    // printf ("%s\n", ucl_object_emit (nvlist_to_ucl (res), UCL_EMIT_JSON));
+    // printf ("%s\n", ucl_object_emit (S16NVRPCNVListToUCL (res),
+    // UCL_EMIT_JSON));
     nvlist_destroy (res);
 
     nvlist_destroy (params);

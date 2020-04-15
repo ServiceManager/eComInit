@@ -49,46 +49,46 @@ extern "C"
         S16R_KLIST,       /* An S16 list */
         S16R_KDESCRIPTOR, /* Unix rights - but cast into fdptr_t!! */
         S16R_KMAX
-    } s16r_kind;
+    } S16NVRPCTypeKind;
 
-    typedef struct s16r_type
+    typedef struct S16NVRPCType
     {
-        s16r_kind kind;
+        S16NVRPCTypeKind kind;
         union {
             /* If kind is STRUCT, this points to the struct description. */
-            struct s16r_struct_description * sdesc;
+            struct S16NVRPCStruct * sdesc;
             /* If kind is LIST, this points to the type of its elements. */
-            struct s16r_type * ltype;
+            struct S16NVRPCType * ltype;
         };
-    } s16r_type;
+    } S16NVRPCType;
 
     typedef struct
     {
-        const char * name; /* Field name */
-        s16r_type type;    /* Type descriptor */
+        const char * name; /* Name */
+        S16NVRPCType type; /* Type descriptor */
         size_t off;        /* Offset of field into corresponding struct */
-    } s16r_field_description;
+    } S16NVRPCField;
 
-    typedef struct s16r_struct_description
+    typedef struct S16NVRPCStruct
     {
-        size_t len;                      /* Total size of struct */
-        s16r_field_description fields[]; /* Field descriptions */
-    } s16r_struct_description;
+        size_t len;             /* Total size of struct */
+        S16NVRPCField fields[]; /* Field descriptions */
+    } S16NVRPCStruct;
 
-    typedef struct s16r_message_arg_signature
+    typedef struct S16NVRPCMessageParameter
     {
         const char * name;
-        s16r_type type;
-    } s16r_message_arg_signature;
+        S16NVRPCType type;
+    } S16NVRPCMessageParameter;
 
-    typedef struct s16r_message_signature
+    typedef struct S16NVRPCMessageSignature
     {
         const char * name; /* Message selector */
-        bool raw;        /* Arguments and return value passed as plain nvlist */
-        s16r_type rtype; /* Return type of message */
-        size_t nargs;    /* Number of arguments */
-        s16r_message_arg_signature args[]; /* Argument signatures */
-    } s16r_message_signature;
+        bool raw; /* Arguments and return value passed as plain nvlist */
+        S16NVRPCType rtype;              /* Return type of message */
+        size_t nargs;                    /* Number of arguments */
+        S16NVRPCMessageParameter args[]; /* Argument signatures */
+    } S16NVRPCMessageSignature;
 
     /* S16 RPC Error code */
     typedef enum
@@ -105,52 +105,54 @@ extern "C"
          * 32000 to -32099	Server error	Reserved for implementation-defined
          * server-errors.
          */
-    } s16r_errcode_t;
+    } S16NVRPCErrorCode;
 
     typedef struct
     {
-        s16r_errcode_t code; /* Error code */
-        char * message;      /* Error message */
-        size_t data_len;     /* Length of any auxiliary data */
-        void * data;         /* Pointer to auxiliary data */
-    } s16r_error_t;
+        S16NVRPCErrorCode code; /* Error code */
+        char * message;         /* Error message */
+        size_t data_len;        /* Length of any auxiliary data */
+        void * data;            /* Pointer to auxiliary data */
+    } S16NVRPCError;
 
-    typedef struct s16r_data_s
+    typedef struct S16NVRPCCallContext
     {
         const char * method;
-        s16r_error_t err;
+        S16NVRPCError err;
         nvlist_t * result;
         void * extra;
-    } s16r_data_t;
+    } S16NVRPCCallContext;
 
-    typedef struct s16r_srv_t s16r_srv_t;
+    typedef struct S16NVRPCServer S16NVRPCServer;
 
-    typedef void * (*s16r_fun_t) (s16r_data_t *, ...);
+    typedef void * (*S16NVRPCImplementationFn) (S16NVRPCCallContext *, ...);
 
     void serialise (nvlist_t * nvl, const char * name, void ** src,
-                    s16r_type * type);
-    nvlist_t * serialiseStruct (void * src, s16r_struct_description * desc);
+                    S16NVRPCType * type);
+    nvlist_t * S16NVRPCStructSerialise (void * src, S16NVRPCStruct * desc);
 
     /*
      * Deserialisation routines. They return 0 if they succeed.
      */
-    int deserialiseStruct (nvlist_t * nvl, s16r_struct_description * desc,
-                           void ** dest);
-    int deserialiseMsgArgs (nvlist_t * nvl, s16r_message_signature * desc,
-                            void ** dest);
+    int S16NVRPCStructDeserialise (nvlist_t * nvl, S16NVRPCStruct * desc,
+                                   void ** dest);
+    int S16NVRPCMessageSignatureDeserialiseArguments (
+        nvlist_t * nvl, S16NVRPCMessageSignature * desc, void ** dest);
 
     /*
      * Destruction routines. Programmatically destroy based on descriptions.
      */
-    void destroyMsgArgs (void ** src, s16r_message_signature * desc);
+    void
+    S16NVRPCMessageSignatureDestroyArguments (void ** src,
+                                              S16NVRPCMessageSignature * desc);
 
-    ucl_object_t * nvlist_to_ucl (const nvlist_t * nvl);
+    ucl_object_t * S16NVRPCNVListToUCL (const nvlist_t * nvl);
 
-    s16r_srv_t * s16r_srv_new (void * extra);
+    S16NVRPCServer * S16NVRPCServerNew (void * extra);
     /* Registers a method with the server. */
-    void s16r_srv_register_method (s16r_srv_t * srv,
-                                   s16r_message_signature * sig,
-                                   s16r_fun_t fun);
+    void S16NVRPCServerRegisterMethod (S16NVRPCServer * srv,
+                                       S16NVRPCMessageSignature * sig,
+                                       S16NVRPCImplementationFn fun);
 
     void testIt ();
 

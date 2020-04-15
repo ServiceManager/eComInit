@@ -46,25 +46,24 @@ typedef struct
     test1_list_t c;
 } testStruct2;
 
-s16r_struct_description testDesc1 = {
-    .len = sizeof (testStruct1),
-    .fields = {{.name = "tD1A",
-                .type = {.kind = S16R_KINT},
-                .off = offsetof (testStruct1, a)},
-               {.name = "tD1B",
-                .type = {.kind = S16R_KSTRING},
-                .off = offsetof (testStruct1, b)},
-               {.name = "tD1C",
-                .type = {.kind = S16R_KDESCRIPTOR},
-                .off = offsetof (testStruct1, c)},
-               {.name = "tD1D",
-                .type = {.kind = S16R_KBOOL},
-                .off = offsetof (testStruct1, d)},
-               {.name = NULL}}};
+S16NVRPCStruct testDesc1 = {.len = sizeof (testStruct1),
+                            .fields = {{.name = "tD1A",
+                                        .type = {.kind = S16R_KINT},
+                                        .off = offsetof (testStruct1, a)},
+                                       {.name = "tD1B",
+                                        .type = {.kind = S16R_KSTRING},
+                                        .off = offsetof (testStruct1, b)},
+                                       {.name = "tD1C",
+                                        .type = {.kind = S16R_KDESCRIPTOR},
+                                        .off = offsetof (testStruct1, c)},
+                                       {.name = "tD1D",
+                                        .type = {.kind = S16R_KBOOL},
+                                        .off = offsetof (testStruct1, d)},
+                                       {.name = NULL}}};
 
-s16r_type testType1 = {.kind = S16R_KSTRUCT, .sdesc = &testDesc1};
+S16NVRPCType testType1 = {.kind = S16R_KSTRUCT, .sdesc = &testDesc1};
 
-s16r_struct_description testDesc2 = {
+S16NVRPCStruct testDesc2 = {
     .len = sizeof (testStruct2),
     .fields = {{.name = "tD2A",
                 .type = {.kind = S16R_KSTRUCT, .sdesc = &testDesc1},
@@ -100,18 +99,18 @@ ATF_TC_BODY (deserialise_twice, tc)
 
     test1_list_lpush (&test2.c, &test1);
 
-    ATF_REQUIRE ((nvl = serialiseStruct (&test2, &testDesc2)));
-    ATF_REQUIRE ((obj = nvlist_to_ucl (nvl)));
+    ATF_REQUIRE ((nvl = S16NVRPCStructSerialise (&test2, &testDesc2)));
+    ATF_REQUIRE ((obj = S16NVRPCNVListToUCL (nvl)));
     ATF_REQUIRE ((str = (char *)ucl_object_emit (obj, UCL_EMIT_JSON)));
     printf ("First serialisation: %s\n", str);
     ucl_object_unref (obj);
     free (str);
 
-    deserialiseStruct (nvl, &testDesc2, (void **)&test3);
+    S16NVRPCStructDeserialise (nvl, &testDesc2, (void **)&test3);
     nvlist_destroy (nvl);
 
-    nvl = serialiseStruct (test3, &testDesc2);
-    obj = nvlist_to_ucl (nvl);
+    nvl = S16NVRPCStructSerialise (test3, &testDesc2);
+    obj = S16NVRPCNVListToUCL (nvl);
     str = (char *)ucl_object_emit (obj, UCL_EMIT_JSON);
     printf ("Second serialisation: %s\n", str);
     ucl_object_unref (obj);

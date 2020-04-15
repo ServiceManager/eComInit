@@ -70,7 +70,7 @@ extern "C"
 
     struct PBusMethod
     {
-        s16r_message_signature * messageSignature;
+        S16NVRPCMessageSignature * messageSignature;
         PBusFun fnImplementation;
     };
 
@@ -102,7 +102,7 @@ extern "C"
 
     struct PBusServer
     {
-        s16r_srv_t * rpcServer;
+        S16NVRPCServer * rpcServer;
         PBusObject * rootObject;
     };
 

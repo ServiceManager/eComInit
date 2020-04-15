@@ -40,7 +40,7 @@
 #include "PBusBroker.h"
 #include "PBus_priv.h"
 
-PBusContext pbCtx;
+PBusInvocationContext pbCtx;
 
 void clean_exit () { unlink (kPBusSocketPath); }
 
@@ -80,7 +80,7 @@ void PBusClient_recv (PBusClient * pbc)
     // nvlist_t * nvl = nvlist_recv (pbc->aFD, 0);
 }
 
-PBusClient * PBusContext_findClient (int fd)
+PBusClient * PBusInvocationContext_findClient (int fd)
 {
     return PBusClient_list_find_int (&pbCtx.aClients, PBusClient_isForFD, fd)
         ->val;
@@ -146,7 +146,7 @@ int main ()
             if ((ev.flags & EV_EOF) && !(fd == pbCtx.aListenSocket))
             {
                 perror ("Socket shut\n");
-                PBusClient_disconnect (PBusContext_findClient (fd));
+                PBusClient_disconnect (PBusInvocationContext_findClient (fd));
             }
             else if (ev.ident == pbCtx.aListenSocket)
             {
@@ -160,7 +160,7 @@ int main ()
             else
             {
                 printf ("Recv\n");
-                PBusClient_recv (PBusContext_findClient (fd));
+                PBusClient_recv (PBusInvocationContext_findClient (fd));
             }
 
             break;

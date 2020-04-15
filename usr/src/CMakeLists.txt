@@ -110,7 +110,7 @@ endif()
 
 
 #
-# Checks
+# Checks and such
 #
 
 set(S16_TOOLS_DIR ${CMAKE_SOURCE_DIR}/tools)
@@ -135,7 +135,14 @@ add_custom_target(tidy
     ${S16_TOOLS_DIR}/checkClangTidy.ksh ${CMAKE_BINARY_DIR}
       `${S16_FIND_SOURCES} tidy`
   COMMENT
-    "Run Clang-Tidy.")
+		"Run Clang-Tidy.")
+
+add_custom_target(generate_tidy
+  COMMAND
+    ${S16_TOOLS_DIR}/makeClangTidy.ksh ${CMAKE_SOURCE_DIR}
+  COMMENT
+	"Generate .clang-tidy files"
+)
 
 #
 # Subprojects
