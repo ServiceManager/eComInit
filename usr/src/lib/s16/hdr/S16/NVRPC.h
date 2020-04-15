@@ -138,6 +138,8 @@ extern "C"
      */
     int S16NVRPCStructDeserialise (nvlist_t * nvl, S16NVRPCStruct * desc,
                                    void ** dest);
+    int S16NVRPCMemberDeserialise (nvlist_t * nvl, const char * name,
+                                   S16NVRPCType * type, void ** dest);
     int S16NVRPCMessageSignatureDeserialiseArguments (
         nvlist_t * nvl, S16NVRPCMessageSignature * desc, void ** dest);
 

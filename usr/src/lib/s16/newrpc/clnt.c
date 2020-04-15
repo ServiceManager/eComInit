@@ -297,7 +297,7 @@ S16NVRPCError * S16NVRPCClientCallInternal (int fd, void ** result,
     processReply (reply, &err);
 
     if (!err)
-        deserialiseMember (reply, "result", sig->rtype, result);
+        S16NVRPCMemberDeserialise (reply, "result", &sig->rtype, result);
 
     return err;
 }

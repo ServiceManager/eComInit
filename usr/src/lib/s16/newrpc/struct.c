@@ -131,8 +131,8 @@ int deserialiseList (nvlist_t * nvl, S16NVRPCType * type, void ** dest);
 int S16NVRPCStructDeserialise (nvlist_t * nvl, S16NVRPCStruct * desc,
                                void ** dest);
 
-int deserialiseMember (nvlist_t * nvl, const char * name, S16NVRPCType * type,
-                       void ** dest)
+int S16NVRPCMemberDeserialise (nvlist_t * nvl, const char * name,
+                               S16NVRPCType * type, void ** dest)
 {
     int err = -1;
 
@@ -141,7 +141,7 @@ int deserialiseMember (nvlist_t * nvl, const char * name, S16NVRPCType * type,
     case S16R_KSTRING:
         if (!nvlist_exists_string (nvl, name))
             goto err;
-        *(char **)dest = nvlist_get_string (nvl, name);
+        *(const char **)dest = nvlist_get_string (nvl, name);
         break;
 
     case S16R_KBOOL:
@@ -159,7 +159,7 @@ int deserialiseMember (nvlist_t * nvl, const char * name, S16NVRPCType * type,
     case S16R_KNVLIST:
         if (!nvlist_exists_nvlist (nvl, name))
             goto err;
-        *(nvlist_t **)dest = nvlist_get_nvlist (nvl, name);
+        *(const nvlist_t **)dest = nvlist_get_nvlist (nvl, name);
         break;
 
     case S16R_KSTRUCT:
@@ -180,7 +180,7 @@ int deserialiseMember (nvlist_t * nvl, const char * name, S16NVRPCType * type,
     case S16R_KDESCRIPTOR:
         if (!nvlist_exists_descriptor (nvl, name))
             goto err;
-        *(fdptr_t *)dest = nvlist_take_descriptor (nvl, name);
+        *(fdptr_t *)dest = nvlist_get_descriptor (nvl, name);
         break;
 
     default:
@@ -206,7 +206,8 @@ int S16NVRPCStructDeserialise (nvlist_t * nvl, S16NVRPCStruct * desc,
 
         if (!nvlist_exists (nvl, field->name))
             return -1;
-        if ((err = deserialiseMember (nvl, field->name, &field->type, member)))
+        if ((err = S16NVRPCMemberDeserialise (
+                 nvl, field->name, &field->type, member)))
             return err;
     }
 
@@ -226,7 +227,7 @@ int deserialiseList (nvlist_t * nvl, S16NVRPCType * type, void ** dest)
     while ((name = nvlist_next (nvl, &nvtype, &cookie)))
     {
         void * dat;
-        int err = deserialiseMember (nvl, name, type, &dat);
+        int err = S16NVRPCMemberDeserialise (nvl, name, type, &dat);
         if (err)
             return err;
         void_list_add (list, dat);
@@ -243,7 +244,8 @@ int S16NVRPCMessageSignatureDeserialiseArguments (
 
     for (int i = 0; (field = &desc->args[i]) && field->name; i++)
     {
-        int err = deserialiseMember (nvl, field->name, &field->type, &struc[i]);
+        int err = S16NVRPCMemberDeserialise (
+            nvl, field->name, &field->type, &struc[i]);
         if (err)
             return err;
     }

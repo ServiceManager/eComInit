@@ -51,7 +51,6 @@ static bool PBusClient_isForFD (PBusClient * pbc, int fd)
 
 PBusClient * PBusClient_new (int fd)
 {
-    char buf[6];
     struct kevent ev;
     PBusClient * pbc = calloc (1, sizeof (*pbc));
     pbc->aFD = fd;
@@ -82,8 +81,6 @@ void PBusClient_disconnect (PBusClient * pbc)
 
 void PBusClient_recv (PBusClient * pbc)
 {
-    nvlist_t * nvl;
-
     S16Log (kS16LogInfo, "[FD %d] Receiving data from client %d.\n", pbc->aFD);
     S16NVRPCServerReceiveFromFileDescriptor (gBroker.aRPCServer, pbc->aFD);
 }

@@ -50,8 +50,5 @@ int main ()
                         "is",
                         nvlist_create (0));
 
-    printf ("Sent!\n");
-    sleep (2);
-
     return 0;
 }
