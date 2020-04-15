@@ -33,8 +33,10 @@ extern "C"
 
 #include <stddef.h>
 
-#include "nv.h"
-#include "ucl.h"
+#include <nv.h>
+#include <ucl.h>
+
+#include "S16/List.h"
 
     typedef intptr_t boolptr_t;
     typedef intptr_t fdptr_t;
@@ -148,11 +150,90 @@ extern "C"
 
     ucl_object_t * S16NVRPCNVListToUCL (const nvlist_t * nvl);
 
+    /*
+     * Create a new NVRPC server.
+     */
     S16NVRPCServer * S16NVRPCServerNew (void * extra);
-    /* Registers a method with the server. */
+
+    /*
+     * Registers a method with the server.
+     */
     void S16NVRPCServerRegisterMethod (S16NVRPCServer * srv,
                                        S16NVRPCMessageSignature * sig,
                                        S16NVRPCImplementationFn fun);
+
+    /*
+     * To be called when data is ready for reading from [one of] the file
+     * descriptors on which you wish this NVRPC server to respond to calls
+     * from.
+     */
+    void S16NVRPCServerReceiveFromFileDescriptor (S16NVRPCServer * server,
+                                                  int fd);
+
+    /*
+     * Synchronous API
+     */
+
+    /*
+     * Makes a synchronous call. Returns either an NVList in which key "result"
+     * has the value of the result, or NULL and sets error to the error details
+     * otherwise.
+     */
+    S16NVRPCError * S16NVRPCClientCallRaw (int fd, nvlist_t ** result,
+                                           const char * methodName,
+                                           nvlist_t * params);
+
+    S16NVRPCError *
+    S16NVRPCClientCallInternal (int fd, void ** result, size_t nparams,
+                                S16NVRPCMessageSignature * signature, ...);
+
+/* Makes an asynchronous call to  the given method on the client reached on the
+ * On receiving reply, callback is called.
+ * @param Descriptor on which to send.
+ * @param Pointer to variable where result will be stored..
+ * @param Message signature.
+ * */
+#define S16NVRPCClientCall(fd, result, ...)                                    \
+    S16NVRPCClientCallInternal (                                               \
+        fd, result, GET_ARG_COUNT (__VA_ARGS__), ##__VA_ARGS__)
+
+    /*
+     * Asynchronous API
+     */
+
+    typedef struct S16NVRPCAsynchronousCall
+    {
+        int id;
+        nvlist_t * result;
+    } S16NVRPCAsyncCall;
+
+    S16ListType (S16NVRPCAsyncCall, S16NVRPCAsyncCall *);
+
+    /*
+     * This must be kept in order to do asynchronous calls.
+     */
+    typedef struct S16NVRPCAsyncContext
+    {
+        S16List (S16NVRPCAsyncCall) calls;
+    } S16NVRPCAsyncContext;
+
+    typedef void * (*S16NVRPCReplyReceivedCallback) (S16NVRPCCallContext *,
+                                                     ...);
+
+    S16NVRPCAsyncCall *
+    S16NVRPCClientCallAsyncInternal (S16NVRPCAsyncContext * asyncContext,
+                                     int fd, size_t nparams,
+                                     S16NVRPCMessageSignature * signature, ...);
+
+/* Makes an asynchronous call to  the given method on the client reached on the
+ * On receiving reply, callback is called.
+ * @param Asynchronous context.
+ * @param Descriptor on which to send.
+ * @param Message signature.
+ * */
+#define S16NVRPCClientCallAsync(asyncContext, fd, ...)                         \
+    S16NVRPCClientCallAsyncInternal (                                          \
+        asyncContext, fd, GET_ARG_COUNT (__VA_ARGS__), ##__VA_ARGS__)
 
     void testIt ();
 

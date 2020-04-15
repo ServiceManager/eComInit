@@ -47,13 +47,6 @@ extern "C"
                                               size_t nparams,
                                               const char * meth_name, ...);
 
-#define GET_ARG_COUNT(...)                                                     \
-    INTERNAL_GET_ARG_COUNT_PRIVATE (                                           \
-        0, ##__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
-#define INTERNAL_GET_ARG_COUNT_PRIVATE(                                        \
-    _0, _1_, _2_, _3_, _4_, _5_, _6_, _7_, _8_, _9_, _10_, count, ...)         \
-    count
-
 /* Makes a call.
  * @param Client
  * @param Method name

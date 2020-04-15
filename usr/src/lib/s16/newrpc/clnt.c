@@ -23,6 +23,7 @@
  * Use is subject to license terms.
  */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -55,6 +56,9 @@ typedef void * (*s16r_fun3_t) (S16NVRPCCallContext *, const void *,
                                const void *, const void *);
 typedef void * (*s16r_fun4_t) (S16NVRPCCallContext *, const void *,
                                const void *, const void *, const void *);
+typedef void * (*s16r_fun5_t) (S16NVRPCCallContext *, const void *,
+                               const void *, const void *, const void *,
+                               const void *);
 
 static bool matchMeth (S16JSONRPCMethod * meth, void * str)
 {
@@ -107,6 +111,9 @@ void * s16r_dispatch_fun (S16NVRPCCallContext * dat, S16JSONRPCMethod * meth,
     case 4:
         return ((s16r_fun4_t)meth->fun) (
             dat, Param (0), Param (1), Param (2), Param (3));
+    case 5:
+        return ((s16r_fun5_t)meth->fun) (
+            dat, Param (0), Param (1), Param (2), Param (3), Param (4));
     default:
         printf ("Unsupported parameter count!\n");
         return NULL;
@@ -181,6 +188,16 @@ nvlist_t * s16r_handle_request (S16NVRPCServer * srv, nvlist_t * req)
     return response;
 }
 
+S16NVRPCServer * S16NVRPCServerNew (void * extra)
+{
+    S16NVRPCServer * srv = malloc (sizeof (*srv));
+
+    srv->extra = extra;
+    srv->meths = s16r_method_list_new ();
+
+    return srv;
+}
+
 void S16NVRPCServerRegisterMethod (S16NVRPCServer * srv,
                                    S16NVRPCMessageSignature * sig,
                                    S16NVRPCImplementationFn fun)
@@ -191,14 +208,126 @@ void S16NVRPCServerRegisterMethod (S16NVRPCServer * srv,
     s16r_method_list_add (&srv->meths, meth);
 }
 
-S16NVRPCServer * S16NVRPCServerNew (void * extra)
+void S16NVRPCServerReceiveFromFileDescriptor (S16NVRPCServer * server, int fd)
 {
-    S16NVRPCServer * srv = malloc (sizeof (*srv));
+    nvlist_t * request = nvlist_recv (fd, 0);
+    nvlist_t * response;
 
-    srv->extra = extra;
-    srv->meths = s16r_method_list_new ();
+    response = s16r_handle_request (server, request);
+    nvlist_send (fd, response);
+}
 
-    return srv;
+/* Returns ID. */
+static int clientCallInternal (int fd, const char * methodName,
+                               nvlist_t * params)
+{
+    int id = rand ();
+    nvlist_t * message = nvlist_create (0);
+
+    nvlist_add_string (message, "nvrpc", "0.9");
+    assert (!nvlist_error (message));
+    nvlist_add_string (message, "method", methodName);
+    assert (!nvlist_error (message));
+    nvlist_add_nvlist (message, "params", params);
+    assert (!nvlist_error (message));
+    nvlist_add_number (message, "id", id);
+    assert (!nvlist_error (message));
+
+    assert (!nvlist_send (fd, message));
+
+    return id;
+}
+
+S16NVRPCError * S16NVRPCClientCallRaw (int fd, nvlist_t ** result,
+                                       const char * methodName,
+                                       nvlist_t * params);
+
+static void processReply (nvlist_t * reply, S16NVRPCError ** err)
+{
+    assert (nvlist_exists_string (reply, "nvrpc"));
+    assert (nvlist_exists_number (reply, "id"));
+    if (!nvlist_exists (reply, "result"))
+    {
+        nvlist_t * nverr = dnvlist_take_nvlist (reply, "error", NULL);
+
+        assert (nverr);
+        assert (nvlist_exists_number (nverr, "code"));
+
+        *err = malloc (sizeof (**err));
+        (*err)->code = nvlist_take_number (nverr, "code");
+        (*err)->message = nvlist_take_string (nverr, "message");
+        if (nvlist_exists_number (nverr, "data_len"))
+        {
+            size_t data_len;
+            assert (nvlist_exists_binary (nverr, "data"));
+            (*err)->data_len = nvlist_take_number (nverr, "data_len");
+            (*err)->data = nvlist_take_binary (nverr, "data", &data_len);
+            assert ((*err)->data_len == data_len);
+        }
+        nvlist_destroy (reply);
+    }
+}
+
+S16NVRPCError * S16NVRPCClientCallInternal (int fd, void ** result,
+                                            size_t nparams,
+                                            S16NVRPCMessageSignature * sig, ...)
+{
+    va_list args;
+    nvlist_t * params = nvlist_create (0);
+    nvlist_t * reply;
+    S16NVRPCError * err = NULL;
+    int id;
+
+    nparams--;
+
+    va_start (args, sig);
+    for (size_t i = 0; i < nparams; ++i)
+    {
+        void * arg = va_arg (args, void *);
+        S16NVRPCMessageParameter * param = &sig->args[i];
+        serialise (params, param->name, &arg, &param->type);
+        assert (!nvlist_error (params));
+    }
+    va_end (args);
+
+    id = clientCallInternal (fd, sig->name, params);
+    nvlist_destroy (params);
+
+    reply = nvlist_recv (fd, 0);
+    processReply (reply, &err);
+
+    if (!err)
+        deserialiseMember (reply, "result", sig->rtype, result);
+
+    return err;
+}
+
+S16NVRPCAsyncCall *
+S16NVRPCClientCallAsyncInternal (S16NVRPCAsyncContext * asyncContext, int fd,
+                                 size_t nparams, S16NVRPCMessageSignature * sig,
+                                 ...)
+{
+    va_list args;
+    nvlist_t * params = nvlist_create (0);
+    S16NVRPCAsyncCall * asyncCall = calloc (1, sizeof (&asyncCall));
+
+    nparams--;
+
+    va_start (args, sig);
+    for (size_t i = 0; i < nparams; ++i)
+    {
+        void * arg = va_arg (args, void *);
+        S16NVRPCMessageParameter * param = &sig->args[i];
+        serialise (params, param->name, &arg, &param->type);
+    }
+    va_end (args);
+
+    printf (">%s<\n",
+            ucl_object_emit (S16NVRPCNVListToUCL (params), UCL_EMIT_YAML));
+
+    asyncCall->id = clientCallInternal (fd, sig->name, params);
+
+    return asyncCall;
 }
 
 void * testFun (void * dat, char * parA, char * parB)
@@ -226,7 +355,8 @@ void testIt ()
     S16NVRPCServer * srv = S16NVRPCServerNew (NULL);
     nvlist_t *req = nvlist_create (0), *params = nvlist_create (0), *res = NULL;
 
-    S16NVRPCServerRegisterMethod (srv, &testMethSig, testFun);
+    S16NVRPCServerRegisterMethod (
+        srv, &testMethSig, (S16NVRPCImplementationFn)testFun);
 
     nvlist_add_string (params, "argA", "Hello");
     nvlist_add_string (params, "argB", "World");

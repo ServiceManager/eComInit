@@ -23,37 +23,35 @@
  * Use is subject to license terms.
  */
 
-#ifndef PBUSPRIV_H_
-#define PBUSPRIV_H_
+#include <stdio.h>
 
-#include "S16/NVRPC.h"
+#include "PBus/PBus.h"
 
-#ifdef __cplusplus
-extern "C"
+ssize_t write (int fildes, const void * buf, size_t nbyte);
+
+extern S16NVRPCMessageSignature msgSendSig;
+
+int main ()
 {
-#endif
+    int fd = PBusConnectToSystemBroker ();
 
-#define kPBusSocketPath "/var/run/PBus.sock"
+    if (fd == -1)
+    {
+        perror ("Failed to connect to system broker");
+        exit (-1);
+    }
 
-    /*
-     * NVList(SendResult) msgSend(fromBusname: String, objectPath: String,
-     *                            selector: String, params: NVList)
-     * Or, in C form:
-     * nvlist_t * msgSend(const char * fromBusname, const char * toBusname,
-     *                    const char * objectPath, const char * selector,
-     *                    nvlist_t * params)
-     *
-     * Note that fromBusname is always set NULL for a direct connection.
-     */
-    extern S16NVRPCMessageSignature msgSendSig;
+    S16NVRPCClientCall (fd,
+                        NULL,
+                        &msgSendSig,
+                        "hello",
+                        "world",
+                        "this",
+                        "is",
+                        nvlist_create (0));
 
-    /*Returns: struct { error: number, result: variable } SendResult;
+    printf ("Sent!\n");
+    sleep (2);
 
-    To Bus: SendResult msgSend( endPoint: string, objectPath: list[string],
-    params: nvlist) */
-
-#ifdef __cplusplus
+    return 0;
 }
-#endif
-
-#endif

@@ -23,46 +23,32 @@
  * Use is subject to license terms.
  */
 
-#ifndef PBUSBROKER_H_
-#define PBUSBROKER_H_
+#include <sys/socket.h>
+#include <sys/un.h>
 
-#include <sys/types.h>
-
-#include "S16/List.h"
 #include "S16/NVRPC.h"
 
-#ifdef __cplusplus
-extern "C"
+#include "PBus/PBus.h"
+#include "PBus_priv.h"
+
+int PBusConnectToSystemBroker ()
 {
-#endif
+    int fd;
+    struct sockaddr_un sun;
 
-    typedef struct
+    if ((fd = socket (AF_UNIX, SOCK_STREAM, 0)) == -1)
     {
-        uid_t aUID;
-        gid_t aGID;
-    } PBusCredentials;
+        return -1;
+    }
 
-    typedef struct
-    {
-        int aID;
-        int aFD;
-        PBusCredentials aCredentials;
-    } PBusClient;
+    S16CloseOnExec (fd);
 
-    S16ListType (PBusClient, PBusClient *);
+    memset (&sun, 0, sizeof (struct sockaddr_un));
+    sun.sun_family = AF_UNIX;
+    strncpy (sun.sun_path, kPBusSocketPath, sizeof (sun.sun_path));
 
-    typedef struct
-    {
-        int aListenSocket;
-        int aKQ;
-
-        PBusClient_list_t aClients;
-    } PBusInvocationContext;
-
-    extern PBusInvocationContext pbctx;
-
-#ifdef __cplusplus
+    if (connect (fd, (struct sockaddr *)&sun, SUN_LEN (&sun)) == -1)
+        return -1;
+    else
+        return fd;
 }
-#endif
-
-#endif

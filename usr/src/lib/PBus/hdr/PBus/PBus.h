@@ -31,6 +31,7 @@ extern "C"
 {
 #endif
 
+#include "S16/Core.h"
 #include "S16/List.h"
 #include "S16/NVRPC.h"
 
@@ -39,6 +40,7 @@ extern "C"
     typedef struct PBusClass PBusClass;
     typedef struct PBusInvocationContext PBusInvocationContext;
     typedef struct PBusServer PBusServer;
+    typedef struct PBusDistantObject PBusDistantObject;
 
     S16ListType (PBusObject, PBusObject *);
     S16ListType (PBusPathElement, char *);
@@ -107,9 +109,35 @@ extern "C"
     };
 
     /*
+     * Represents a connection to a P-Bus Broker.
+     */
+    struct PBusBrokerConnection
+    {
+        int fd;
+    };
+
+    /*
+     * Returns a file descriptor connected to the system P-Bus Broker.
+     */
+    int PBusConnectToSystemBroker ();
+
+    /*
+     * Sends a message on the given file descriptor, waiting for a reply.
+     */
+    void PBusSendMessage (int fd, const char * fromBusname,
+                          const char * toBusname, const char * objectPath,
+                          const char * selector, nvlist_t * params);
+
+    /*
      * Creates a new PBusServer with @rootObject as its root object.
      */
     PBusObject * PBusServerNew (PBusObject * rootObject);
+    /*
+     * To be called when data is ready for reading from [one of] the file
+     * descriptors on which you wish this P-Bus server to respond to events
+     * from.
+     */
+    void PBusServerReceiveFromFileDescriptor (PBusServer * server, int fd);
 
     /*
      * Creates a new PBusObject of class @isa, name @name, and with user data

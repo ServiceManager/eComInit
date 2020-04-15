@@ -32,15 +32,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "S16/NVRPC.h"
-#include "S16/Service.h"
-#include "nv.h"
-#include "systemd/sd-daemon.h"
+#include <S16/NVRPC.h>
+#include <S16/Service.h>
+#include <nv.h>
+#include <systemd/sd-daemon.h>
 
-#include "PBusBroker.h"
+#include "PBus-Broker.h"
 #include "PBus_priv.h"
 
-PBusInvocationContext pbCtx;
+PBusBroker gBroker;
 
 void clean_exit () { unlink (kPBusSocketPath); }
 
@@ -51,13 +51,17 @@ static bool PBusClient_isForFD (PBusClient * pbc, int fd)
 
 PBusClient * PBusClient_new (int fd)
 {
+    char buf[6];
     struct kevent ev;
     PBusClient * pbc = calloc (1, sizeof (*pbc));
     pbc->aFD = fd;
 
     EV_SET (&ev, fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
-    if (kevent (pbCtx.aListenSocket, &ev, 1, NULL, 0, NULL) == -1)
-        perror ("kevent");
+    if (kevent (gBroker.aKQ, &ev, 1, NULL, 0, NULL) == -1)
+        perror ("Add KEvent for new client:");
+
+    PBusClient_list_add (&gBroker.aClients, pbc);
+    S16Log (kS16LogInfo, "[FD %d] New client accepted.\n", pbc->aFD);
 
     return pbc;
 }
@@ -67,23 +71,36 @@ void PBusClient_disconnect (PBusClient * pbc)
     struct kevent ev;
 
     EV_SET (&ev, pbc->aFD, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-    if (kevent (pbCtx.aListenSocket, &ev, 1, NULL, 0, NULL) == -1)
+    if (kevent (gBroker.aKQ, &ev, 1, NULL, 0, NULL) == -1)
         perror ("kevent");
 
     close (pbc->aFD);
-    PBusClient_list_del (&pbCtx.aClients, pbc);
+    PBusClient_list_del (&gBroker.aClients, pbc);
+    S16Log (kS16LogInfo, "[FD %d] Client disconnected.\n", pbc->aFD);
     free (pbc);
 }
 
 void PBusClient_recv (PBusClient * pbc)
 {
-    // nvlist_t * nvl = nvlist_recv (pbc->aFD, 0);
+    nvlist_t * nvl;
+
+    S16Log (kS16LogInfo, "[FD %d] Receiving data from client %d.\n", pbc->aFD);
+    S16NVRPCServerReceiveFromFileDescriptor (gBroker.aRPCServer, pbc->aFD);
 }
 
-PBusClient * PBusInvocationContext_findClient (int fd)
+PBusClient * PBusBroker_findClient (int fd)
 {
-    return PBusClient_list_find_int (&pbCtx.aClients, PBusClient_isForFD, fd)
+    return PBusClient_list_find_int (&gBroker.aClients, PBusClient_isForFD, fd)
         ->val;
+}
+
+void * msgRecv (S16NVRPCCallContext * ctx, const char * fromBusname,
+                const char * toBusname, const char * objectPath,
+                const char * selector, nvlist_t * params)
+{
+    printf ("Receive from busname %s to busname %s\n", fromBusname, toBusname);
+
+    return nvlist_create (0);
 }
 
 int main ()
@@ -96,14 +113,16 @@ int main ()
     atexit (clean_exit);
     S16LogInit ("P-Bus Broker");
 
-    if ((pbCtx.aKQ = kqueue ()) == -1)
+    unlink (kPBusSocketPath);
+
+    if ((gBroker.aKQ = kqueue ()) == -1)
     {
         perror ("KQueue: Failed to open\n");
     }
 
-    S16HandleSignalWithKQueue (pbCtx.aKQ, SIGINT);
+    S16HandleSignalWithKQueue (gBroker.aKQ, SIGINT);
 
-    if ((pbCtx.aListenSocket = socket (AF_UNIX, SOCK_STREAM, 0)) == -1)
+    if ((gBroker.aListenSocket = socket (AF_UNIX, SOCK_STREAM, 0)) == -1)
     {
         perror ("Failed to create socket");
         exit (-1);
@@ -113,54 +132,56 @@ int main ()
     sun.sun_family = AF_UNIX;
     strncpy (sun.sun_path, kPBusSocketPath, sizeof (sun.sun_path));
 
-    if (bind (pbCtx.aListenSocket, (struct sockaddr *)&sun, SUN_LEN (&sun)) ==
+    if (bind (gBroker.aListenSocket, (struct sockaddr *)&sun, SUN_LEN (&sun)) ==
         -1)
     {
         perror ("Failed to bind socket");
         exit (-1);
     }
 
-    listen (pbCtx.aListenSocket, 5);
+    listen (gBroker.aListenSocket, 5);
 
-    EV_SET (&ev, pbCtx.aListenSocket, EVFILT_READ, EV_ADD, 0, 0, NULL);
+    EV_SET (&ev, gBroker.aListenSocket, EVFILT_READ, EV_ADD, 0, 0, NULL);
 
-    if (kevent (pbCtx.aKQ, &ev, 1, NULL, 0, NULL) == -1)
+    if (kevent (gBroker.aKQ, &ev, 1, NULL, 0, NULL) == -1)
     {
         perror ("KQueue: Failed to set read event\n");
         exit (EXIT_FAILURE);
     }
+
+    gBroker.aRPCServer = S16NVRPCServerNew (NULL);
+    S16NVRPCServerRegisterMethod (
+        gBroker.aRPCServer, &msgSendSig, (S16NVRPCImplementationFn)msgRecv);
 
     sd_notify (0, "READY=1\nSTATUS=P-Bus Broker now accepting connections");
 
     while (run)
     {
         memset (&ev, 0x00, sizeof (struct kevent));
-        kevent (pbCtx.aKQ, NULL, 0, &ev, 1, NULL);
+        kevent (gBroker.aKQ, NULL, 0, &ev, 1, NULL);
 
         switch (ev.filter)
         {
         case EVFILT_READ:
         {
             int fd = ev.ident;
+            printf ("Event!\n");
 
-            if ((ev.flags & EV_EOF) && !(fd == pbCtx.aListenSocket))
+            if ((ev.flags & EV_EOF) && !(fd == gBroker.aListenSocket))
             {
-                perror ("Socket shut\n");
-                PBusClient_disconnect (PBusInvocationContext_findClient (fd));
+                PBusClient_disconnect (PBusBroker_findClient (fd));
             }
-            else if (ev.ident == pbCtx.aListenSocket)
+            else if (ev.ident == gBroker.aListenSocket)
             {
-                printf ("Accept\n");
-                fd = accept (fd, NULL, NULL);
-                if (fd == -1)
+                int newFd = accept (fd, NULL, NULL);
+                if (newFd == -1)
                     perror ("accept");
-
-                PBusClient_new (fd);
+                else
+                    PBusClient_new (newFd);
             }
             else
             {
-                printf ("Recv\n");
-                PBusClient_recv (PBusInvocationContext_findClient (fd));
+                PBusClient_recv (PBusBroker_findClient (fd));
             }
 
             break;

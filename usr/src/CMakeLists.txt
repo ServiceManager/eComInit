@@ -159,11 +159,12 @@ add_subdirectory(lib/uthash)
 
 add_subdirectory(etc)
 
-add_subdirectory(agent/PBusBroker)
+add_subdirectory(agent/PBus-Broker)
 add_subdirectory(agent/restartd)
 add_subdirectory(agent/configd)
 add_subdirectory(agent/graphd)
 
+add_subdirectory(cmd/PBus-Monitor)
 add_subdirectory(cmd/svcadm)
 add_subdirectory(cmd/svccfg)
 add_subdirectory(cmd/svcnotify)

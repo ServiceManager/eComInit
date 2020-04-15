@@ -49,6 +49,8 @@ extern "C"
     void s16mem_free (void * ap);
 #endif
 
+#define S16List(name) name##_list_t
+
 /* Defines a list type.
  * name: Friendly name
  * type: Actual type

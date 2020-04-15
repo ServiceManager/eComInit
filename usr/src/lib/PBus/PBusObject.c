@@ -41,10 +41,12 @@ typedef void * (*PB4ParamFun) (PBusObject *, PBusInvocationContext *,
                                const void *, const void *, const void *,
                                const void *);
 
-S16NVRPCMessageSignature msgRecvSig = {
+S16NVRPCMessageSignature msgSendSig = {
+    .name = "msgSend",
     .rtype = {.kind = S16R_KNVLIST},
-    .nargs = 2,
+    .nargs = 5,
     .args = {{.name = "fromBusname", .type = {.kind = S16R_KSTRING}},
+             {.name = "toBusname", .type = {.kind = S16R_KSTRING}},
              {.name = "objectPath", .type = {.kind = S16R_KSTRING}},
              {.name = "selector", .type = {.kind = S16R_KSTRING}},
              {.name = "params", .type = {.kind = S16R_KNVLIST}},

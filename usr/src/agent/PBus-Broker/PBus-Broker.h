@@ -23,9 +23,12 @@
  * Use is subject to license terms.
  */
 
-#ifndef PBUSPRIV_H_
-#define PBUSPRIV_H_
+#ifndef PBUSBROKER_H_
+#define PBUSBROKER_H_
 
+#include <sys/types.h>
+
+#include "S16/List.h"
 #include "S16/NVRPC.h"
 
 #ifdef __cplusplus
@@ -33,24 +36,32 @@ extern "C"
 {
 #endif
 
-#define kPBusSocketPath "/var/run/PBus.sock"
+    typedef struct
+    {
+        uid_t aUID;
+        gid_t aGID;
+    } PBusCredentials;
 
-    /*
-     * NVList(SendResult) msgSend(fromBusname: String, objectPath: String,
-     *                            selector: String, params: NVList)
-     * Or, in C form:
-     * nvlist_t * msgSend(const char * fromBusname, const char * toBusname,
-     *                    const char * objectPath, const char * selector,
-     *                    nvlist_t * params)
-     *
-     * Note that fromBusname is always set NULL for a direct connection.
-     */
-    extern S16NVRPCMessageSignature msgSendSig;
+    typedef struct
+    {
 
-    /*Returns: struct { error: number, result: variable } SendResult;
+        int aFD; /* FD on which this client is connected */
+        int aID; /* Unique (per system session) ID of client */
+        PBusCredentials aCredentials; /* Credentials of client */
+    } PBusClient;
 
-    To Bus: SendResult msgSend( endPoint: string, objectPath: list[string],
-    params: nvlist) */
+    S16ListType (PBusClient, PBusClient *);
+
+    typedef struct
+    {
+        int aListenSocket;
+        int aKQ;
+        S16NVRPCServer * aRPCServer;
+
+        PBusClient_list_t aClients;
+    } PBusBroker;
+
+    extern PBusBroker gBroker;
 
 #ifdef __cplusplus
 }

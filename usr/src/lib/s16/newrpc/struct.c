@@ -141,7 +141,7 @@ int deserialiseMember (nvlist_t * nvl, const char * name, S16NVRPCType * type,
     case S16R_KSTRING:
         if (!nvlist_exists_string (nvl, name))
             goto err;
-        *(char **)dest = nvlist_take_string (nvl, name);
+        *(char **)dest = nvlist_get_string (nvl, name);
         break;
 
     case S16R_KBOOL:
@@ -159,7 +159,8 @@ int deserialiseMember (nvlist_t * nvl, const char * name, S16NVRPCType * type,
     case S16R_KNVLIST:
         if (!nvlist_exists_nvlist (nvl, name))
             goto err;
-        *(nvlist_t **)dest = nvlist_take_nvlist (nvl, name);
+        *(nvlist_t **)dest = nvlist_get_nvlist (nvl, name);
+        break;
 
     case S16R_KSTRUCT:
         /* 'Take' cannot be used here. */
