@@ -204,7 +204,7 @@ static nvlist_t * findReceiver (PBusObject * self, void * extraData,
     }
 }
 
-nvlist_t * findReceiver_root (PBusServer * srv, const char * path,
+nvlist_t * findReceiver_root (PBusConnection * srv, const char * path,
                               const char * fromBusname, const char * selector,
                               nvlist_t * params)
 {

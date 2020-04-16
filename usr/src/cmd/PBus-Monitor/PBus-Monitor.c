@@ -31,24 +31,28 @@ ssize_t write (int fildes, const void * buf, size_t nbyte);
 
 extern S16NVRPCMessageSignature msgSendSig;
 
+S16NVRPCMessageSignature testMethSig = {
+    .name = "TestMeth",
+    .rtype = {.kind = S16R_KSTRING},
+    .nargs = 2,
+    .args = {{.name = "argA", .type = {.kind = S16R_KSTRING}},
+             {.name = "argB", .type = {.kind = S16R_KSTRING}},
+             {.name = NULL}}};
+
 int main ()
 {
-    int fd = PBusConnectToSystemBroker ();
+    PBusConnection * conn = PBusConnectionNew (NULL);
+    PBusInvocation * invoc;
 
-    if (fd == -1)
+    if (PBusConnectionConnectToSystemBroker (conn) == -1)
     {
         perror ("Failed to connect to system broker");
         exit (-1);
     }
 
-    S16NVRPCClientCall (fd,
-                        NULL,
-                        &msgSendSig,
-                        "hello",
-                        "world",
-                        "this",
-                        "is",
-                        nvlist_create (0));
+    invoc = PBusInvocationNewWithSignature (&testMethSig);
+    PBusInvocationSetArguments (invoc, "hello", "world");
+    PBusInvocationSendTo (invoc, PBusConnectionGetBrokerObject (conn));
 
     return 0;
 }

@@ -69,7 +69,7 @@ ATF_TC_HEAD (send_message, tc)
 }
 ATF_TC_BODY (send_message, tc)
 {
-    PBusServer * srv = calloc (1, sizeof (*srv));
+    PBusConnection * srv = calloc (1, sizeof (*srv));
     PBusObject *a, *b, *c;
     nvlist_t * params = nvlist_create (0);
     nvlist_t * res;

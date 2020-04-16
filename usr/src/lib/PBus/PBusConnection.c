@@ -23,6 +23,7 @@
  * Use is subject to license terms.
  */
 
+#include <assert.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 
@@ -31,7 +32,33 @@
 #include "PBus/PBus.h"
 #include "PBus_priv.h"
 
-int PBusConnectToSystemBroker ()
+/*
+ * Creates a new PBusConnection with @rootObject as its root object. You may
+ * specify NULL if you don't want to respond to anything.
+ */
+PBusConnection * PBusConnectionNew (PBusObject * rootObject)
+{
+    PBusConnection * conn = malloc (sizeof (*conn));
+
+    conn->fd = -1;
+    conn->rpcServer = S16NVRPCServerNew (conn);
+    conn->rootObject = rootObject;
+    conn->brokerObject = NULL;
+
+    return conn;
+}
+
+bool PBusConnectionIsConnected (PBusConnection * connection)
+{
+    return connection->fd != -1;
+}
+
+bool PBusConnectionIsDirect (PBusConnection * connection)
+{
+    return PBusConnectionIsConnected (connection) && connection->brokerObject;
+}
+
+int PBusConnectionConnectToSystemBroker (PBusConnection * connection)
 {
     int fd;
     struct sockaddr_un sun;
@@ -50,5 +77,88 @@ int PBusConnectToSystemBroker ()
     if (connect (fd, (struct sockaddr *)&sun, SUN_LEN (&sun)) == -1)
         return -1;
     else
+    {
+        connection->fd = fd;
+        connection->brokerObject =
+            PBusDistantObjectNew (connection, "PBus-Broker", "");
         return fd;
+    }
+}
+
+static S16NVRPCError * ConnectionSendMessageSynchronous (
+    PBusConnection * connection, void ** result, const char * toBusname,
+    const char * objectPath, const char * selector, nvlist_t * params)
+{
+    return S16NVRPCClientCall (connection->fd,
+                               result,
+                               &msgSendSig,
+                               "",
+                               toBusname,
+                               objectPath,
+                               selector,
+                               params);
+}
+
+PBusDistantObject * PBusConnectionGetBrokerObject (PBusConnection * connection)
+{
+    return connection->brokerObject;
+}
+
+PBusDistantObject * PBusDistantObjectNew (PBusConnection * conn,
+                                          const char * busName,
+                                          const char * objectPath)
+{
+
+    PBusDistantObject * obj = malloc (sizeof (*obj));
+    obj->connection = conn;
+    obj->busName = busName;
+    obj->objectPath = objectPath;
+    return obj;
+}
+
+/*
+ * PBusInvocation
+ */
+
+PBusInvocation *
+PBusInvocationNewWithSignature (S16NVRPCMessageSignature * signature)
+{
+    PBusInvocation * invoc = malloc (sizeof (*invoc));
+    invoc->arguments = NULL;
+    invoc->wasSent = false;
+    invoc->signature = signature;
+    return invoc;
+}
+
+void _PBusInvocationSetArgumentsInternal (size_t nParams,
+                                          PBusInvocation * invocation, ...)
+{
+    va_list args;
+    nvlist_t * arguments = nvlist_create (0);
+
+    nParams--;
+    assert (invocation->signature->nargs == nParams);
+
+    va_start (args, invocation);
+    for (size_t i = 0; i < nParams; ++i)
+    {
+        void * argument = va_arg (args, void *);
+        S16NVRPCMessageParameter * param = &invocation->signature->args[i];
+        serialise (arguments, param->name, &argument, &param->type);
+    }
+    va_end (args);
+
+    invocation->arguments = arguments;
+}
+
+S16NVRPCError * PBusInvocationSendTo (PBusInvocation * invocation,
+                                      PBusDistantObject * object)
+{
+    invocation->wasSent = true;
+    return ConnectionSendMessageSynchronous (object->connection,
+                                             &invocation->result,
+                                             object->busName,
+                                             object->objectPath,
+                                             invocation->signature->name,
+                                             invocation->arguments);
 }

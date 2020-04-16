@@ -39,8 +39,10 @@ extern "C"
     typedef struct PBusObject PBusObject;
     typedef struct PBusClass PBusClass;
     typedef struct PBusInvocationContext PBusInvocationContext;
-    typedef struct PBusServer PBusServer;
+    typedef struct PBusConnection PBusConnection;
     typedef struct PBusDistantObject PBusDistantObject;
+    typedef struct PBusConnection PBusConnection;
+    typedef struct PBusInvocation PBusInvocation;
 
     S16ListType (PBusObject, PBusObject *);
     S16ListType (PBusPathElement, char *);
@@ -102,45 +104,108 @@ extern "C"
         const char * selector;     /* Message selector */
     };
 
-    struct PBusServer
+    /*
+     * Represents a P-Bus connection.
+     * A P-Bus connection is always bidirectional; it serves requests sent to
+     * it, and it can deliver requests to other P-Bus endpoints. A P-Bus
+     * connection might be direct, in which case no indirection through a P-Bus
+     * broker occurs; in this instance, bus names are meaningless.
+     */
+    struct PBusConnection
     {
+        int fd;
+        PBusDistantObject * brokerObject; /* If connected to a broker, points to
+                                             the Broker object. */
         S16NVRPCServer * rpcServer;
         PBusObject * rootObject;
     };
 
     /*
-     * Represents a connection to a P-Bus Broker.
+     * Represents a P-Bus object located distally.
      */
-    struct PBusBrokerConnection
+    struct PBusDistantObject
     {
-        int fd;
+        PBusConnection * connection;
+        const char * busName; /* Doesn't matter if connection is direct. */
+        const char * objectPath;
+    };
+
+    struct PBusInvocation
+    {
+        S16NVRPCMessageSignature * signature;
+        nvlist_t * arguments;
+        bool wasSent;
+        void * result;
     };
 
     /*
-     * Returns a file descriptor connected to the system P-Bus Broker.
+     * Creates a new PBusConnection with @rootObject as its root object. You may
+     * specify NULL if you don't want to respond to anything.
      */
-    int PBusConnectToSystemBroker ();
+    PBusConnection * PBusConnectionNew (PBusObject * rootObject);
 
     /*
-     * Sends a message on the given file descriptor, waiting for a reply.
+     * Checks whether a P-Bus connection is connected or not.
      */
-    void PBusSendMessage (int fd, const char * fromBusname,
-                          const char * toBusname, const char * objectPath,
-                          const char * selector, nvlist_t * params);
+    bool PBusConnectionIsConnected (PBusConnection * connection);
 
     /*
-     * Creates a new PBusServer with @rootObject as its root object.
+     * Checks whether a P-Bus connection is direct (i.e. not connected to a
+     * broker.)
      */
-    PBusObject * PBusServerNew (PBusObject * rootObject);
-    /*
-     * To be called when data is ready for reading from [one of] the file
-     * descriptors on which you wish this P-Bus server to respond to events
-     * from.
-     */
-    void PBusServerReceiveFromFileDescriptor (PBusServer * server, int fd);
+    bool PBusConnectionIsDirect (PBusConnection * connection);
 
     /*
-     * Creates a new PBusObject of class @isa, name @name, and with user data
+     * Connects a PBusConnection to the System Broker. The PBusConnection must
+     * already be connected before calling this.
+     * Returns the associated file descriptor if successful, -1 otherwise.
+     */
+    int PBusConnectionConnectToSystemBroker (PBusConnection * connection);
+
+    /*
+     * Consumers should call when data is ready for reading from the file
+     * descriptor associated with this P-Bus connection.
+     */
+    void PBusConnectionReceiveFromFileDescriptor (PBusConnection * server);
+
+    /*
+     * Returns the PBusDistantObject referring to the P-Bus Broker's services,
+     * if this is not a direct connection.
+     */
+    PBusDistantObject *
+    PBusConnectionGetBrokerObject (PBusConnection * connection);
+
+    /*
+     * Creates a new proxy to an object located in another process.
+     */
+    PBusDistantObject * PBusDistantObjectNew (PBusConnection * conn,
+                                              const char * busName,
+                                              const char * objectPath);
+
+    /*
+     * Creates a new invocation with the given message signature.
+     */
+    PBusInvocation *
+    PBusInvocationNewWithSignature (S16NVRPCMessageSignature * signature);
+
+    /*
+     * Sets up the arguments of a PBusInvocation.
+     * Argument 1 must be the invocation; the remainder are the
+     */
+#define PBusInvocationSetArguments(...)                                        \
+    _PBusInvocationSetArgumentsInternal (GET_ARG_COUNT (__VA_ARGS__),          \
+                                         ##__VA_ARGS__)
+
+    /*
+     * Sends a message synchronously, waiting for a reply. Returns NULL if
+     * successful, otherwise returns an error description.
+     */
+    S16NVRPCError * PBusInvocationSendTo (PBusInvocation * Invocation,
+                                          PBusDistantObject * object);
+
+    /*
+     * Creates a new PBusObject of class @isa, name @name, and with user
+     * data
      * @data, which is included in every message invocation on that object.
      */
     PBusObject * PBusObjectNew (PBusClass * isa, char * name, void * data);
@@ -157,6 +222,9 @@ extern "C"
      * Adds a PBusObject @obj as a subobject of @parent
      */
     void PBusObjectAddSubObject (PBusObject * obj, PBusObject * subObj);
+
+    void _PBusInvocationSetArgumentsInternal (size_t nParams,
+                                              PBusInvocation * invocation, ...);
 
 #ifdef __cplusplus
 }
