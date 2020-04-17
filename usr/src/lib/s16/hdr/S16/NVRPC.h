@@ -96,13 +96,13 @@ extern "C"
     typedef enum
     {
         /* The nvlist sent is not a valid Request object. */
-        S16R_EInvalidRequest = -32600,
+        kS16NVRPCErrorInvalidRequest = -32600,
         /* The method does not exist / is not available. */
-        S16R_ENoSuchMethid = -32601,
+        kS16NVRPCErrorNoSuchMethod = -32601,
         /* Invalid method parameter(s). */
-        S16R_EInvalidParams = -32602,
+        kS16NVRPCErrorInvalidParams = -32602,
         /* Internal NVList-RPC error. */
-        S16R_EInternalError = -32603,
+        kS16NVRPCErrorInternalError = -32603,
         /*
          * 32000 to -32099	Server error	Reserved for implementation-defined
          * server-errors.
@@ -151,6 +151,11 @@ extern "C"
                                               S16NVRPCMessageSignature * desc);
 
     ucl_object_t * S16NVRPCNVListToUCL (const nvlist_t * nvl);
+
+    /*
+     * Destroy an S16NVRPC error.
+     */
+    void S16NVRPCErrorDestroy (S16NVRPCError * err);
 
     /*
      * Create a new NVRPC server.

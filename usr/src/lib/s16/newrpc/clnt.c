@@ -79,7 +79,7 @@ nvlist_t * s16r_make_request (const char * meth_name, nvlist_t * params)
     nvlist_add_string (req, "nvrpc", "0.9");
     nvlist_add_string (req, "method", meth_name);
     if (params)
-        nvlist_add_nvlist (req, "params", params);
+        nvlist_move_nvlist (req, "params", params);
     nvlist_add_number (req, "id", rand ());
 
     return req;
@@ -89,6 +89,7 @@ void * s16r_dispatch_fun (S16NVRPCCallContext * dat, S16JSONRPCMethod * meth,
                           nvlist_t * nvparams)
 {
     void ** params;
+    void * result;
 
     if (S16NVRPCMessageSignatureDeserialiseArguments (
             nvparams, meth->sig, (void **)&params))
@@ -101,35 +102,76 @@ void * s16r_dispatch_fun (S16NVRPCCallContext * dat, S16JSONRPCMethod * meth,
     switch (meth->sig->nargs)
     {
     case 0:
-        return ((s16r_fun0_t)meth->fun) (dat);
+        result = ((s16r_fun0_t)meth->fun) (dat);
+        break;
     case 1:
-        return ((s16r_fun1_t)meth->fun) (dat, Param (0));
+        result = ((s16r_fun1_t)meth->fun) (dat, Param (0));
+        break;
     case 2:
-        return ((s16r_fun2_t)meth->fun) (dat, Param (0), Param (1));
+        result = ((s16r_fun2_t)meth->fun) (dat, Param (0), Param (1));
+        break;
     case 3:
-        return ((s16r_fun3_t)meth->fun) (dat, Param (0), Param (1), Param (2));
+        result =
+            ((s16r_fun3_t)meth->fun) (dat, Param (0), Param (1), Param (2));
+        break;
     case 4:
-        return ((s16r_fun4_t)meth->fun) (
+        result = ((s16r_fun4_t)meth->fun) (
             dat, Param (0), Param (1), Param (2), Param (3));
+        break;
     case 5:
-        return ((s16r_fun5_t)meth->fun) (
+        result = ((s16r_fun5_t)meth->fun) (
             dat, Param (0), Param (1), Param (2), Param (3), Param (4));
+        break;
     default:
         printf ("Unsupported parameter count!\n");
         return NULL;
     }
 #undef Param
+
+    S16NVRPCMessageSignatureDestroyArguments (params, meth->sig);
+
+    return result;
 }
 
 static nvlist_t * create_error (S16NVRPCErrorCode code, const char * message,
                                 size_t data_len, void * data)
 {
     nvlist_t * nverr = nvlist_create (0);
+
     nvlist_add_number (nverr, "code", code);
+    assert (!nvlist_error (nverr));
     nvlist_add_string (nverr, "message", message);
+    assert (!nvlist_error (nverr));
     if (data_len)
+    {
         nvlist_add_binary (nverr, "data", data, data_len);
+        assert (!nvlist_error (nverr));
+    }
+
     return nverr;
+}
+
+static nvlist_t * CreateResponse (S16NVRPCType * rtype, void * result,
+                                  nvlist_t * error, int id)
+{
+    nvlist_t * response = nvlist_create (0);
+
+    nvlist_add_string (response, "nvrpc", "0.9");
+    assert (!nvlist_error (response));
+    if (result)
+    {
+        serialise (response, "result", &result, rtype);
+        assert (!nvlist_error (response));
+    }
+    else
+    {
+        nvlist_move_nvlist (response, "error", error);
+        assert (!nvlist_error (response));
+    }
+    nvlist_add_number (response, "id", id);
+    assert (!nvlist_error (response));
+
+    return response;
 }
 
 nvlist_t * s16r_handle_request (S16NVRPCServer * srv, nvlist_t * req)
@@ -139,7 +181,7 @@ nvlist_t * s16r_handle_request (S16NVRPCServer * srv, nvlist_t * req)
     bool isNote = false;
 
     S16JSONRPCMethod * meth;
-    S16NVRPCCallContext * dat;
+    S16NVRPCCallContext dat;
     nvlist_t * params;
     void * result;
 
@@ -153,39 +195,68 @@ nvlist_t * s16r_handle_request (S16NVRPCServer * srv, nvlist_t * req)
     if (!nvlist_exists_string (req, "nvrpc"))
     {
         printf ("Invalid request: Missing nvrpc field.\n");
-        return NULL;
+        nverr = create_error (
+            kS16NVRPCErrorInvalidRequest, "Missing nvrpc field", 0, NULL);
+        goto error;
     }
-    if (!(methname = dnvlist_take_string (req, "method", NULL)))
+    if (!(methname = dnvlist_get_string (req, "method", NULL)))
     {
         printf ("Invalid request: Missing method name.\n");
-        return NULL;
+        nverr = create_error (
+            kS16NVRPCErrorInvalidRequest, "Missing method name", 0, NULL);
+        goto error;
     }
 
-    params = dnvlist_take_nvlist (req, "params", NULL);
+    params = (nvlist_t *)dnvlist_get_nvlist (req, "params", NULL);
 
     if (!(meth = findMeth (srv, methname)))
     {
         printf ("Invalid request: Didn't find method.\n");
-        return NULL;
+        nverr = create_error (
+            kS16NVRPCErrorInvalidRequest, "Method not found", 0, NULL);
+        goto error;
     }
 
-    dat = calloc (1, sizeof (*dat));
-    dat->extra = srv->extra;
-    dat->method = methname;
-    result = s16r_dispatch_fun (NULL, meth, params);
+    dat.err.code = 0;
+    dat.err.data = NULL;
+    dat.err.data_len = 0;
+    dat.err.message = NULL;
+    dat.extra = srv->extra;
+    dat.method = methname;
+    result = s16r_dispatch_fun (&dat, meth, params);
 
     if (!isNote)
     {
-        response = nvlist_create (0);
-        nvlist_add_string (response, "nvrpc", "0.9");
-        if (result)
-            serialise (response, "result", &result, &meth->sig->rtype);
-        else
-            nvlist_add_nvlist (response, "error", nverr);
-        nvlist_add_number (response, "id", id);
+        response = CreateResponse (&meth->sig->rtype,
+                                   result,
+                                   !result ? create_error (dat.err.code,
+                                                           dat.err.message,
+                                                           dat.err.data_len,
+                                                           dat.err.data)
+                                           : NULL,
+                                   id);
     }
 
+    goto done;
+
+error:
+    if (isNote)
+    {
+        if (nverr)
+            nvlist_destroy (nverr);
+    }
+    else
+        response = CreateResponse (NULL, NULL, nverr, id);
+
+done:
     return response;
+}
+
+void S16NVRPCErrorDestroy (S16NVRPCError * err)
+{
+    free (err->message);
+    free (err->data);
+    free (err);
 }
 
 S16NVRPCServer * S16NVRPCServerNew (void * extra)
@@ -214,7 +285,9 @@ void S16NVRPCServerReceiveFromFileDescriptor (S16NVRPCServer * server, int fd)
     nvlist_t * response;
 
     response = s16r_handle_request (server, request);
-    nvlist_send (fd, response);
+    nvlist_destroy (request);
+    assert (nvlist_send (fd, response) != -1);
+    nvlist_destroy (response);
 }
 
 /* Returns ID. */
@@ -228,12 +301,13 @@ static int clientCallInternal (int fd, const char * methodName,
     assert (!nvlist_error (message));
     nvlist_add_string (message, "method", methodName);
     assert (!nvlist_error (message));
-    nvlist_add_nvlist (message, "params", params);
+    nvlist_move_nvlist (message, "params", params);
     assert (!nvlist_error (message));
     nvlist_add_number (message, "id", id);
     assert (!nvlist_error (message));
 
     assert (!nvlist_send (fd, message));
+    nvlist_destroy (message);
 
     return id;
 }
@@ -242,30 +316,39 @@ S16NVRPCError * S16NVRPCClientCallRaw (int fd, nvlist_t ** result,
                                        const char * methodName,
                                        nvlist_t * params);
 
-static void processReply (nvlist_t * reply, S16NVRPCError ** err)
+static S16NVRPCError * ProcessReply (nvlist_t * reply)
 {
     assert (nvlist_exists_string (reply, "nvrpc"));
     assert (nvlist_exists_number (reply, "id"));
     if (!nvlist_exists (reply, "result"))
     {
-        nvlist_t * nverr = dnvlist_take_nvlist (reply, "error", NULL);
+        S16NVRPCError * err;
+        nvlist_t * nverr =
+            (nvlist_t *)dnvlist_get_nvlist (reply, "error", NULL);
 
         assert (nverr);
         assert (nvlist_exists_number (nverr, "code"));
 
-        *err = malloc (sizeof (**err));
-        (*err)->code = nvlist_take_number (nverr, "code");
-        (*err)->message = nvlist_take_string (nverr, "message");
+        err = malloc (sizeof (*err));
+        err->code = nvlist_take_number (nverr, "code");
+        err->message = nvlist_take_string (nverr, "message");
         if (nvlist_exists_number (nverr, "data_len"))
         {
             size_t data_len;
             assert (nvlist_exists_binary (nverr, "data"));
-            (*err)->data_len = nvlist_take_number (nverr, "data_len");
-            (*err)->data = nvlist_take_binary (nverr, "data", &data_len);
-            assert ((*err)->data_len == data_len);
+            err->data_len = nvlist_take_number (nverr, "data_len");
+            err->data = nvlist_take_binary (nverr, "data", &data_len);
+            assert (err->data_len == data_len);
         }
-        nvlist_destroy (reply);
+        else
+        {
+            err->data_len = 0;
+            err->data = NULL;
+        }
+
+        return err;
     }
+    return NULL;
 }
 
 S16NVRPCError * S16NVRPCClientCallInternal (int fd, void ** result,
@@ -291,13 +374,14 @@ S16NVRPCError * S16NVRPCClientCallInternal (int fd, void ** result,
     va_end (args);
 
     id = clientCallInternal (fd, sig->name, params);
-    nvlist_destroy (params);
 
     reply = nvlist_recv (fd, 0);
-    processReply (reply, &err);
+    err = ProcessReply (reply);
 
     if (!err)
         S16NVRPCMemberDeserialise (reply, "result", &sig->rtype, result);
+
+    nvlist_destroy (reply);
 
     return err;
 }

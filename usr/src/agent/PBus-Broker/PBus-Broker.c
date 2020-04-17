@@ -95,15 +95,18 @@ void * msgRecv (S16NVRPCCallContext * ctx, const char * fromBusname,
                 const char * toBusname, const char * objectPath,
                 const char * selector, nvlist_t * params)
 {
-    printf ("Receive from busname %s to busname %s, object path %s, selector "
+    /*printf ("Receive from busname %s to busname %s, object path %s, selector "
             "%s, parameters:\n%s\n",
             fromBusname,
             toBusname,
             objectPath,
             selector,
-            ucl_object_emit (S16NVRPCNVListToUCL (params), UCL_EMIT_JSON));
+            ucl_object_emit (S16NVRPCNVListToUCL (params), UCL_EMIT_JSON));*/
 
-    return nvlist_create (0);
+    ctx->err.code = kS16NVRPCErrorInvalidParams;
+    ctx->err.message = "Parameters are invalid.\n";
+
+    return NULL; // nvlist_create (0);
 }
 
 int main ()

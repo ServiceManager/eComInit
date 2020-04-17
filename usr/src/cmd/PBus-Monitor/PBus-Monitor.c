@@ -43,6 +43,7 @@ int main ()
 {
     PBusConnection * conn = PBusConnectionNew (NULL);
     PBusInvocation * invoc;
+    S16NVRPCError * err;
 
     if (PBusConnectionConnectToSystemBroker (conn) == -1)
     {
@@ -52,7 +53,13 @@ int main ()
 
     invoc = PBusInvocationNewWithSignature (&testMethSig);
     PBusInvocationSetArguments (invoc, "hello", "world");
-    PBusInvocationSendTo (invoc, PBusConnectionGetBrokerObject (conn));
+    err = PBusInvocationSendTo (invoc, PBusConnectionGetBrokerObject (conn));
+
+    if (err)
+    {
+        printf ("Error: Code %d: %s\n", err->code, err->message);
+        S16NVRPCErrorDestroy (err);
+    }
 
     return 0;
 }

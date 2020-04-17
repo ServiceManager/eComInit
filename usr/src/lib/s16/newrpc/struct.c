@@ -141,19 +141,19 @@ int S16NVRPCMemberDeserialise (nvlist_t * nvl, const char * name,
     case S16R_KSTRING:
         if (!nvlist_exists_string (nvl, name))
             goto err;
-        *(const char **)dest = nvlist_get_string (nvl, name);
+        *(const char **)dest = nvlist_take_string (nvl, name);
         break;
 
     case S16R_KBOOL:
         if (!nvlist_exists_bool (nvl, name))
             goto err;
-        *(boolptr_t *)dest = nvlist_get_bool (nvl, name);
+        *(boolptr_t *)dest = nvlist_take_bool (nvl, name);
         break;
 
     case S16R_KINT:
         if (!nvlist_exists_number (nvl, name))
             goto err;
-        *(intptr_t *)dest = nvlist_get_number (nvl, name);
+        *(intptr_t *)dest = nvlist_take_number (nvl, name);
         break;
 
     case S16R_KNVLIST:
@@ -180,7 +180,7 @@ int S16NVRPCMemberDeserialise (nvlist_t * nvl, const char * name,
     case S16R_KDESCRIPTOR:
         if (!nvlist_exists_descriptor (nvl, name))
             goto err;
-        *(fdptr_t *)dest = nvlist_get_descriptor (nvl, name);
+        *(fdptr_t *)dest = nvlist_take_descriptor (nvl, name);
         break;
 
     default:
@@ -294,7 +294,7 @@ void destroy (void ** src, S16NVRPCType * type)
         free (*(char **)src);
         break;
     case S16R_KNVLIST:
-        nvlist_destroy (*(nvlist_t **)src);
+        // nvlist_destroy (*(nvlist_t **)src);
         break;
     case S16R_KSTRUCT:
         destroyStruct (*src, type->sdesc);

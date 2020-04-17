@@ -46,7 +46,7 @@ static void * testFun (PBusObject * self, PBusInvocationContext * ctx,
     ATF_CHECK_STREQ (strA, "Hello");
     ATF_CHECK_STREQ (strB, "World");
     ATF_CHECK_STREQ ("pbus:/system/testSvc", ctx->fromBusname);
-    ATF_CHECK_STREQ ("a/b/c", ctx->selfPath);
+    ATF_CHECK_STREQ ("a/b/c", ctx->fullSelfPath);
     ATF_CHECK_STREQ ("TestMeth", ctx->selector);
 
     return "Done!";
@@ -62,10 +62,7 @@ PBusClass testCls = {.methods = &testMethSigs};
 ATF_TC (send_message);
 ATF_TC_HEAD (send_message, tc)
 {
-    atf_tc_set_md_var (
-        tc,
-        "descr",
-        "Test conversion of a service structure to and from JSON form.");
+    atf_tc_set_md_var (tc, "descr", "Test message send and resolution.");
 }
 ATF_TC_BODY (send_message, tc)
 {
@@ -97,8 +94,6 @@ ATF_TC_BODY (send_message, tc)
     // printf ("%s\n", ucl_object_emit (S16NVRPCNVListToUCL (res),
     // UCL_EMIT_JSON));
     nvlist_destroy (res);
-
-    nvlist_destroy (params);
 
 #define destroyObj(a)                                                          \
     PBusObject_list_destroy (&a->subObjects);                                  \
