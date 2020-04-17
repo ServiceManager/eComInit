@@ -25,10 +25,7 @@
 
 /*Returns: struct { error: number, result: variable } SendResult; */
 
-#include "S16/NVRPC.h"
-
 #include "PBus/PBus.h"
-#include "PBus_priv.h"
 
 typedef void * (*PB0ParamFun) (PBusObject *, PBusInvocationContext *);
 typedef void * (*PB1ParamFun) (PBusObject *, PBusInvocationContext *,

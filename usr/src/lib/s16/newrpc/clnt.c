@@ -37,9 +37,9 @@ typedef struct
     const char * name;
     void * fun;
     S16NVRPCMessageSignature * sig;
-} S16JSONRPCMethod;
+} S16NVRPCMethod;
 
-S16ListType (s16r_method, S16JSONRPCMethod *);
+S16ListType (s16r_method, S16NVRPCMethod *);
 
 struct S16NVRPCServer
 {
@@ -60,12 +60,12 @@ typedef void * (*s16r_fun5_t) (S16NVRPCCallContext *, const void *,
                                const void *, const void *, const void *,
                                const void *);
 
-static bool matchMeth (S16JSONRPCMethod * meth, void * str)
+static bool matchMeth (S16NVRPCMethod * meth, void * str)
 {
     return !strcmp (meth->sig->name, str);
 }
 
-static S16JSONRPCMethod * findMeth (S16NVRPCServer * srv, const char * name)
+static S16NVRPCMethod * findMeth (S16NVRPCServer * srv, const char * name)
 {
     s16r_method_list_it it =
         s16r_method_list_find (&srv->meths, matchMeth, (void *)name);
@@ -85,41 +85,42 @@ nvlist_t * s16r_make_request (const char * meth_name, nvlist_t * params)
     return req;
 }
 
-void * s16r_dispatch_fun (S16NVRPCCallContext * dat, S16JSONRPCMethod * meth,
-                          nvlist_t * nvparams)
+void * DispatchFunctionWithArgumentsConverted (S16NVRPCCallContext * dat,
+                                               S16NVRPCImplementationFn fun,
+                                               S16NVRPCMessageSignature * sig,
+                                               nvlist_t * nvparams)
 {
     void ** params;
     void * result;
 
     if (S16NVRPCMessageSignatureDeserialiseArguments (
-            nvparams, meth->sig, (void **)&params))
+            nvparams, sig, (void **)&params))
     {
         printf ("Error!\n");
         return NULL;
     }
 
 #define Param(i) params[i]
-    switch (meth->sig->nargs)
+    switch (sig->nargs)
     {
     case 0:
-        result = ((s16r_fun0_t)meth->fun) (dat);
+        result = ((s16r_fun0_t)fun) (dat);
         break;
     case 1:
-        result = ((s16r_fun1_t)meth->fun) (dat, Param (0));
+        result = ((s16r_fun1_t)fun) (dat, Param (0));
         break;
     case 2:
-        result = ((s16r_fun2_t)meth->fun) (dat, Param (0), Param (1));
+        result = ((s16r_fun2_t)fun) (dat, Param (0), Param (1));
         break;
     case 3:
-        result =
-            ((s16r_fun3_t)meth->fun) (dat, Param (0), Param (1), Param (2));
+        result = ((s16r_fun3_t)fun) (dat, Param (0), Param (1), Param (2));
         break;
     case 4:
-        result = ((s16r_fun4_t)meth->fun) (
+        result = ((s16r_fun4_t)fun) (
             dat, Param (0), Param (1), Param (2), Param (3));
         break;
     case 5:
-        result = ((s16r_fun5_t)meth->fun) (
+        result = ((s16r_fun5_t)fun) (
             dat, Param (0), Param (1), Param (2), Param (3), Param (4));
         break;
     default:
@@ -128,13 +129,13 @@ void * s16r_dispatch_fun (S16NVRPCCallContext * dat, S16JSONRPCMethod * meth,
     }
 #undef Param
 
-    S16NVRPCMessageSignatureDestroyArguments (params, meth->sig);
+    S16NVRPCMessageSignatureDestroyArguments (params, sig);
 
     return result;
 }
 
-static nvlist_t * create_error (S16NVRPCErrorCode code, const char * message,
-                                size_t data_len, void * data)
+static nvlist_t * CreateNVError (S16NVRPCErrorCode code, const char * message,
+                                 size_t data_len, void * data)
 {
     nvlist_t * nverr = nvlist_create (0);
 
@@ -151,8 +152,8 @@ static nvlist_t * create_error (S16NVRPCErrorCode code, const char * message,
     return nverr;
 }
 
-static nvlist_t * CreateResponse (S16NVRPCType * rtype, void * result,
-                                  nvlist_t * error, int id)
+static nvlist_t * CreateNVResponse (S16NVRPCType * rtype, void * result,
+                                    nvlist_t * error, int id)
 {
     nvlist_t * response = nvlist_create (0);
 
@@ -174,13 +175,13 @@ static nvlist_t * CreateResponse (S16NVRPCType * rtype, void * result,
     return response;
 }
 
-nvlist_t * s16r_handle_request (S16NVRPCServer * srv, nvlist_t * req)
+static nvlist_t * s16r_handle_request (S16NVRPCServer * srv, nvlist_t * req)
 {
     int id;
     const char * methname;
     bool isNote = false;
 
-    S16JSONRPCMethod * meth;
+    S16NVRPCMethod * meth;
     S16NVRPCCallContext dat;
     nvlist_t * params;
     void * result;
@@ -195,14 +196,14 @@ nvlist_t * s16r_handle_request (S16NVRPCServer * srv, nvlist_t * req)
     if (!nvlist_exists_string (req, "nvrpc"))
     {
         printf ("Invalid request: Missing nvrpc field.\n");
-        nverr = create_error (
+        nverr = CreateNVError (
             kS16NVRPCErrorInvalidRequest, "Missing nvrpc field", 0, NULL);
         goto error;
     }
     if (!(methname = dnvlist_get_string (req, "method", NULL)))
     {
         printf ("Invalid request: Missing method name.\n");
-        nverr = create_error (
+        nverr = CreateNVError (
             kS16NVRPCErrorInvalidRequest, "Missing method name", 0, NULL);
         goto error;
     }
@@ -212,7 +213,7 @@ nvlist_t * s16r_handle_request (S16NVRPCServer * srv, nvlist_t * req)
     if (!(meth = findMeth (srv, methname)))
     {
         printf ("Invalid request: Didn't find method.\n");
-        nverr = create_error (
+        nverr = CreateNVError (
             kS16NVRPCErrorInvalidRequest, "Method not found", 0, NULL);
         goto error;
     }
@@ -223,18 +224,19 @@ nvlist_t * s16r_handle_request (S16NVRPCServer * srv, nvlist_t * req)
     dat.err.message = NULL;
     dat.extra = srv->extra;
     dat.method = methname;
-    result = s16r_dispatch_fun (&dat, meth, params);
+    result = DispatchFunctionWithArgumentsConverted (
+        &dat, meth->fun, meth->sig, params);
 
     if (!isNote)
     {
-        response = CreateResponse (&meth->sig->rtype,
-                                   result,
-                                   !result ? create_error (dat.err.code,
-                                                           dat.err.message,
-                                                           dat.err.data_len,
-                                                           dat.err.data)
-                                           : NULL,
-                                   id);
+        response = CreateNVResponse (&meth->sig->rtype,
+                                     result,
+                                     !result ? CreateNVError (dat.err.code,
+                                                              dat.err.message,
+                                                              dat.err.data_len,
+                                                              dat.err.data)
+                                             : NULL,
+                                     id);
     }
 
     goto done;
@@ -246,7 +248,7 @@ error:
             nvlist_destroy (nverr);
     }
     else
-        response = CreateResponse (NULL, NULL, nverr, id);
+        response = CreateNVResponse (NULL, NULL, nverr, id);
 
 done:
     return response;
@@ -273,7 +275,7 @@ void S16NVRPCServerRegisterMethod (S16NVRPCServer * srv,
                                    S16NVRPCMessageSignature * sig,
                                    S16NVRPCImplementationFn fun)
 {
-    S16JSONRPCMethod * meth = malloc (sizeof (*meth));
+    S16NVRPCMethod * meth = malloc (sizeof (*meth));
     meth->fun = fun;
     meth->sig = sig;
     s16r_method_list_add (&srv->meths, meth);

@@ -23,47 +23,23 @@
  * Use is subject to license terms.
  */
 
-#ifndef PBUSBROKER_H_
-#define PBUSBROKER_H_
-
-#include <sys/types.h>
-
-#include "PBus/PBus.h"
-#include "S16/List.h"
+#ifndef S16NEWRPC_PRIVATE_H_
+#define S16NEWRPC_PRIVATE_H_
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-    typedef struct
-    {
-        uid_t aUID;
-        gid_t aGID;
-    } PBusCredentials;
+#include "S16/NVRPC.h"
 
-    typedef struct
-    {
-
-        int aFD; /* FD on which this client is connected */
-        int aID; /* Unique (per system session) ID of client */
-        PBusCredentials aCredentials; /* Credentials of client */
-    } PBusClient;
-
-    S16ListType (PBusClient, PBusClient *);
-
-    typedef struct
-    {
-        int aListenSocket;
-        int aKQ;
-        S16NVRPCServer * aRPCServer;
-        PBusObject * brokerObject;
-
-        PBusClient_list_t aClients;
-    } PBusBroker;
-
-    extern PBusBroker gBroker;
-    extern PBusObject gBrokerObject;
+    /*
+     * Dispatches a function, converting arguments automatically, so long as
+     * they can all fit within a void pointer.
+     */
+    void * DispatchFunctionWithArgumentsConverted (
+        S16NVRPCCallContext * dat, S16NVRPCImplementationFn fun,
+        S16NVRPCMessageSignature * sig, nvlist_t * nvparams)
 
 #ifdef __cplusplus
 }
