@@ -26,14 +26,19 @@
 #ifndef PBUSPRIV_H_
 #define PBUSPRIV_H_
 
-#include "S16/NVRPC.h"
-
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
+#include "PBus/PBus.h"
+
 #define kPBusSocketPath "/var/run/PBus.sock"
+
+    nvlist_t * PBusFindReceiver_Root (PBusObject * obj, S16NVRPCError * err,
+                                      const char * path,
+                                      const char * fromBusname,
+                                      const char * selector, nvlist_t * params);
 
     /*
      * NVList(SendResult) msgSend(fromBusname: String, objectPath: String,

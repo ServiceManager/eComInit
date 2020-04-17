@@ -28,7 +28,7 @@
 #include "S16/NVRPC.h"
 
 #include "PBus/PBus.h"
-#include "PBus_priv.h"
+#include "PBus/PBus_Private.h"
 
 S16NVRPCMessageSignature testMethSig = {
     .name = "TestMeth",
@@ -46,7 +46,7 @@ static void * testFun (PBusObject * self, PBusInvocationContext * ctx,
     ATF_CHECK_STREQ (strA, "Hello");
     ATF_CHECK_STREQ (strB, "World");
     ATF_CHECK_STREQ ("pbus:/system/testSvc", ctx->fromBusname);
-    ATF_CHECK_STREQ ("a/b/c", ctx->fullSelfPath);
+    ATF_CHECK_STREQ ("b/c", ctx->fullSelfPath);
     ATF_CHECK_STREQ ("TestMeth", ctx->selector);
 
     return "Done!";
@@ -66,10 +66,10 @@ ATF_TC_HEAD (send_message, tc)
 }
 ATF_TC_BODY (send_message, tc)
 {
-    PBusConnection * srv = calloc (1, sizeof (*srv));
     PBusObject *a, *b, *c;
     nvlist_t * params = nvlist_create (0);
     nvlist_t * res;
+    S16NVRPCError err;
 
     nvlist_add_string (params, "argA", "Hello");
     nvlist_add_string (params, "argB", "World");
@@ -82,29 +82,23 @@ ATF_TC_BODY (send_message, tc)
     makeObj (a);
     makeObj (b);
     makeObj (c);
-    makeObj (srv->rootObject);
 
 #define addObjToObj(b, a) PBusObject_list_add (&a->subObjects, b)
-    addObjToObj (a, srv->rootObject);
     addObjToObj (b, a);
     addObjToObj (c, b);
 
-    res = findReceiver_root (
-        srv, "a/b/c", "pbus:/system/testSvc", "TestMeth", params);
-    // printf ("%s\n", ucl_object_emit (S16NVRPCNVListToUCL (res),
-    // UCL_EMIT_JSON));
+    res = PBusFindReceiver_Root (
+        a, &err, "b/c", "pbus:/system/testSvc", "TestMeth", params);
+    nvlist_destroy (params);
     nvlist_destroy (res);
 
 #define destroyObj(a)                                                          \
     PBusObject_list_destroy (&a->subObjects);                                  \
     free (a)
 
-    destroyObj (srv->rootObject);
     destroyObj (a);
     destroyObj (b);
     destroyObj (c);
-
-    free (srv);
 }
 
 ATF_TP_ADD_TCS (tp)

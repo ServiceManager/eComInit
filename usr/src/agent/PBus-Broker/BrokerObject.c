@@ -24,7 +24,7 @@
  */
 
 #include "PBus-Broker.h"
-#include "PBus_priv.h"
+#include "PBus/PBus_Private.h"
 
 /*
  * Returns an ID by which this subscription rule will be known and can be

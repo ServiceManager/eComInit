@@ -229,14 +229,15 @@ static nvlist_t * s16r_handle_request (S16NVRPCServer * srv, nvlist_t * req)
 
     if (!isNote)
     {
-        response = CreateNVResponse (&meth->sig->rtype,
-                                     result,
-                                     !result ? CreateNVError (dat.err.code,
-                                                              dat.err.message,
-                                                              dat.err.data_len,
-                                                              dat.err.data)
-                                             : NULL,
-                                     id);
+        response =
+            CreateNVResponse (&meth->sig->rtype,
+                              result,
+                              dat.err.code ? CreateNVError (dat.err.code,
+                                                            dat.err.message,
+                                                            dat.err.data_len,
+                                                            dat.err.data)
+                                           : NULL,
+                              id);
     }
 
     goto done;

@@ -38,7 +38,7 @@
 #include <systemd/sd-daemon.h>
 
 #include "PBus-Broker.h"
-#include "PBus_priv.h"
+#include "PBus/PBus_Private.h"
 
 PBusBroker gBroker;
 

@@ -30,7 +30,7 @@
 #include "S16/NVRPC.h"
 
 #include "PBus/PBus.h"
-#include "PBus_priv.h"
+#include "PBus/PBus_Private.h"
 
 /*
  * Creates a new PBusConnection with @rootObject as its root object. You may

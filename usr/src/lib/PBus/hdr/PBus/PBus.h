@@ -48,9 +48,9 @@ extern "C"
     S16ListType (PBusPathElement, char *);
 
     typedef PBusObject * (*ResolveSubObjectFun) (
-        PBusObject * self, void ** user, const char * fullPath,
-        const char * selfPath, PBusPathElement_list_t * remainingPath,
-        const char * selector);
+        PBusObject * self, S16NVRPCError * err, void ** user,
+        const char * fullPath, const char * selfPath,
+        PBusPathElement_list_t * remainingPath, const char * selector);
     typedef nvlist_t * (*DispatchMessageFun) (PBusObject * self,
                                               PBusInvocationContext * ctx,
                                               nvlist_t * params);
@@ -97,6 +97,7 @@ extern "C"
 
     struct PBusInvocationContext
     {
+        S16NVRPCError * err;       /* Error field to set if necessary */
         const char * fromBusname;  /* NULL if direct */
         const char * fullSelfPath; /* Full object path of self */
         const char * selfPath;     /* Last component of object path of self */

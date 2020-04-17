@@ -26,6 +26,7 @@
 /*Returns: struct { error: number, result: variable } SendResult; */
 
 #include "PBus/PBus.h"
+#include "PBus/PBus_Private.h"
 
 typedef void * (*PB0ParamFun) (PBusObject *, PBusInvocationContext *);
 typedef void * (*PB1ParamFun) (PBusObject *, PBusInvocationContext *,
@@ -118,12 +119,14 @@ static nvlist_t * sendMessage (PBusObject * self, PBusInvocationContext * ctx,
     return response;
 }
 
-static nvlist_t * dispatchMessage (PBusObject * self, void * user,
-                                   const char * fullPath, const char * selfPath,
+static nvlist_t * dispatchMessage (PBusObject * self, S16NVRPCError * err,
+                                   void * user, const char * fullPath,
+                                   const char * selfPath,
                                    const char * fromBusname,
                                    const char * selector, nvlist_t * params)
 {
-    PBusInvocationContext ctx = {.fullSelfPath = fullPath,
+    PBusInvocationContext ctx = {.err = err,
+                                 .fullSelfPath = fullPath,
                                  .selfPath = selfPath,
                                  .user = user,
                                  .selector = selector,
@@ -150,15 +153,22 @@ static nvlist_t * dispatchMessage (PBusObject * self, void * user,
     }
 }
 
-static nvlist_t * findReceiver (PBusObject * self, void * extraData,
-                                const char * fullPath, const char * selfPath,
+static nvlist_t * findReceiver (PBusObject * self, S16NVRPCError * err,
+                                void * extraData, const char * fullPath,
+                                const char * selfPath,
                                 PBusPathElement_list_t * remainingPath,
                                 const char * fromBusname, const char * selector,
                                 nvlist_t * params)
 {
     if (LL_empty (remainingPath))
-        return dispatchMessage (
-            self, extraData, fullPath, selfPath, fromBusname, selector, params);
+        return dispatchMessage (self,
+                                err,
+                                extraData,
+                                fullPath,
+                                selfPath,
+                                fromBusname,
+                                selector,
+                                params);
     else
     {
         char * next = PBusPathElement_list_lpop (remainingPath);
@@ -166,10 +176,11 @@ static nvlist_t * findReceiver (PBusObject * self, void * extraData,
         if (self->isA->fnResolveSubObject)
         {
             self = self->isA->fnResolveSubObject (
-                self, &extraData, fullPath, next, remainingPath, selector);
+                self, err, &extraData, fullPath, next, remainingPath, selector);
             if (!self)
                 return /* kS16LogErrorOR */ NULL;
             return findReceiver (self,
+                                 err,
                                  extraData,
                                  fullPath,
                                  next,
@@ -190,6 +201,7 @@ static nvlist_t * findReceiver (PBusObject * self, void * extraData,
                 return NULL;
             }
             return findReceiver (list_it_val (it),
+                                 err,
                                  extraData,
                                  fullPath,
                                  next,
@@ -201,9 +213,9 @@ static nvlist_t * findReceiver (PBusObject * self, void * extraData,
     }
 }
 
-nvlist_t * findReceiver_root (PBusConnection * srv, const char * path,
-                              const char * fromBusname, const char * selector,
-                              nvlist_t * params)
+nvlist_t * PBusFindReceiver_Root (PBusObject * self, S16NVRPCError * err,
+                                  const char * path, const char * fromBusname,
+                                  const char * selector, nvlist_t * params)
 {
     PBusPathElement_list_t pathEls = PBusPathElement_list_new ();
     char *pathCopy = NULL, *pathToSplit = NULL, *seg;
@@ -226,9 +238,10 @@ nvlist_t * findReceiver_root (PBusConnection * srv, const char * path,
 
     if (!path)
         result = dispatchMessage (
-            srv->rootObject, NULL, NULL, NULL, fromBusname, selector, params);
+            self, err, NULL, NULL, NULL, fromBusname, selector, params);
     else
-        result = findReceiver (srv->rootObject,
+        result = findReceiver (self,
+                               err,
                                NULL,
                                path,
                                NULL,
