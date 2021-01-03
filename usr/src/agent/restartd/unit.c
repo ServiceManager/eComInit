@@ -352,7 +352,9 @@ void unit_ptevent (Unit * unit, S16ProcessTrackerEvent * info)
     {
         if (unit_has_pid (unit, info->pid))
         {
-            printf ("Not tracking %lu as we already do.\n",
+            S16Log (kS16LogWarn,
+                    "Process tracker notified birth of PID %lu but we already "
+                    "track it.\n",
                     (uintptr_t)info->pid);
         }
         else
